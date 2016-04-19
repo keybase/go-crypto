@@ -286,7 +286,7 @@ func (pk *PrivateKey) parsePrivateKey(data []byte) (err error) {
 		return pk.parseRSAPrivateKey(data)
 	case PubKeyAlgoDSA:
 		return pk.parseDSAPrivateKey(data)
-	case PubKeyAlgoElGamal:
+	case PubKeyAlgoElGamal, PubKeyAlgoElGamalEncAndSign:
 		return pk.parseElGamalPrivateKey(data)
 	case PubKeyAlgoECDSA:
 		return pk.parseECDSAPrivateKey(data)
