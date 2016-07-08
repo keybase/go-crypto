@@ -116,7 +116,9 @@ func (e *Entity) encryptionKey(now time.Time) (Key, bool) {
 		// so this sort of thing is pretty important for encrypting to older keys.
 		//
 		if ((subkey.Sig.FlagsValid && subkey.Sig.FlagEncryptCommunications) ||
-			(!subkey.Sig.FlagsValid && subkey.PublicKey.PubKeyAlgo == packet.PubKeyAlgoElGamal)) &&
+			(!subkey.Sig.FlagsValid &&
+				(subkey.PublicKey.PubKeyAlgo == packet.PubKeyAlgoElGamal ||
+					subkey.PublicKey.PubKeyAlgo == packet.PubKeyAlgoElGamalEncAndSign))) &&
 			subkey.PublicKey.PubKeyAlgo.CanEncrypt() &&
 			!subkey.Sig.KeyExpired(now) &&
 			subkey.Revocation == nil &&

@@ -42,7 +42,7 @@ func (e *EncryptedKey) parse(r io.Reader) (err error) {
 	switch e.Algo {
 	case PubKeyAlgoRSA, PubKeyAlgoRSAEncryptOnly:
 		e.encryptedMPI1.bytes, e.encryptedMPI1.bitLength, err = readMPI(r)
-	case PubKeyAlgoElGamal:
+	case PubKeyAlgoElGamal, PubKeyAlgoElGamalEncAndSign:
 		e.encryptedMPI1.bytes, e.encryptedMPI1.bitLength, err = readMPI(r)
 		if err != nil {
 			return
@@ -73,7 +73,7 @@ func (e *EncryptedKey) Decrypt(priv *PrivateKey, config *Config) error {
 	switch priv.PubKeyAlgo {
 	case PubKeyAlgoRSA, PubKeyAlgoRSAEncryptOnly:
 		b, err = rsa.DecryptPKCS1v15(config.Random(), priv.PrivateKey.(*rsa.PrivateKey), e.encryptedMPI1.bytes)
-	case PubKeyAlgoElGamal:
+	case PubKeyAlgoElGamal, PubKeyAlgoElGamalEncAndSign:
 		c1 := new(big.Int).SetBytes(e.encryptedMPI1.bytes)
 		c2 := new(big.Int).SetBytes(e.encryptedMPI2.bytes)
 		b, err = elgamal.Decrypt(priv.PrivateKey.(*elgamal.PrivateKey), c1, c2)
@@ -102,7 +102,7 @@ func (e *EncryptedKey) Serialize(w io.Writer) error {
 	switch e.Algo {
 	case PubKeyAlgoRSA, PubKeyAlgoRSAEncryptOnly:
 		mpiLen = 2 + len(e.encryptedMPI1.bytes)
-	case PubKeyAlgoElGamal:
+	case PubKeyAlgoElGamal, PubKeyAlgoElGamalEncAndSign:
 		mpiLen = 2 + len(e.encryptedMPI1.bytes) + 2 + len(e.encryptedMPI2.bytes)
 	default:
 		return errors.InvalidArgumentError("don't know how to serialize encrypted key type " + strconv.Itoa(int(e.Algo)))
@@ -117,7 +117,7 @@ func (e *EncryptedKey) Serialize(w io.Writer) error {
 	switch e.Algo {
 	case PubKeyAlgoRSA, PubKeyAlgoRSAEncryptOnly:
 		writeMPIs(w, e.encryptedMPI1)
-	case PubKeyAlgoElGamal:
+	case PubKeyAlgoElGamal, PubKeyAlgoElGamalEncAndSign:
 		writeMPIs(w, e.encryptedMPI1, e.encryptedMPI2)
 	default:
 		panic("internal error")
@@ -145,7 +145,7 @@ func SerializeEncryptedKey(w io.Writer, pub *PublicKey, cipherFunc CipherFunctio
 	switch pub.PubKeyAlgo {
 	case PubKeyAlgoRSA, PubKeyAlgoRSAEncryptOnly:
 		return serializeEncryptedKeyRSA(w, config.Random(), buf, pub.PublicKey.(*rsa.PublicKey), keyBlock)
-	case PubKeyAlgoElGamal:
+	case PubKeyAlgoElGamal, PubKeyAlgoElGamalEncAndSign:
 		return serializeEncryptedKeyElGamal(w, config.Random(), buf, pub.PublicKey.(*elgamal.PublicKey), keyBlock)
 	case PubKeyAlgoDSA, PubKeyAlgoRSASignOnly:
 		return errors.InvalidArgumentError("cannot encrypt to public key of type " + strconv.Itoa(int(pub.PubKeyAlgo)))

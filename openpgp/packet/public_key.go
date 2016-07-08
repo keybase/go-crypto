@@ -321,7 +321,7 @@ func (pk *PublicKey) parse(r io.Reader) (err error) {
 		err = pk.parseRSA(r)
 	case PubKeyAlgoDSA:
 		err = pk.parseDSA(r)
-	case PubKeyAlgoElGamal:
+	case PubKeyAlgoElGamal, PubKeyAlgoElGamalEncAndSign:
 		err = pk.parseElGamal(r)
 	case PubKeyAlgoEdDSA:
 		pk.edk = &edDSAkey{}
@@ -461,7 +461,7 @@ func (pk *PublicKey) SerializeSignaturePrefix(h io.Writer) {
 		pLength += 2 + uint16(len(pk.q.bytes))
 		pLength += 2 + uint16(len(pk.g.bytes))
 		pLength += 2 + uint16(len(pk.y.bytes))
-	case PubKeyAlgoElGamal:
+	case PubKeyAlgoElGamal, PubKeyAlgoElGamalEncAndSign:
 		pLength += 2 + uint16(len(pk.p.bytes))
 		pLength += 2 + uint16(len(pk.g.bytes))
 		pLength += 2 + uint16(len(pk.y.bytes))
@@ -492,7 +492,7 @@ func (pk *PublicKey) Serialize(w io.Writer) (err error) {
 		length += 2 + len(pk.q.bytes)
 		length += 2 + len(pk.g.bytes)
 		length += 2 + len(pk.y.bytes)
-	case PubKeyAlgoElGamal:
+	case PubKeyAlgoElGamal, PubKeyAlgoElGamalEncAndSign:
 		length += 2 + len(pk.p.bytes)
 		length += 2 + len(pk.g.bytes)
 		length += 2 + len(pk.y.bytes)
@@ -540,7 +540,7 @@ func (pk *PublicKey) serializeWithoutHeaders(w io.Writer) (err error) {
 		return writeMPIs(w, pk.n, pk.e)
 	case PubKeyAlgoDSA:
 		return writeMPIs(w, pk.p, pk.q, pk.g, pk.y)
-	case PubKeyAlgoElGamal:
+	case PubKeyAlgoElGamal, PubKeyAlgoElGamalEncAndSign:
 		return writeMPIs(w, pk.p, pk.g, pk.y)
 	case PubKeyAlgoECDSA:
 		return pk.ec.serialize(w)
@@ -557,7 +557,7 @@ func (pk *PublicKey) serializeWithoutHeaders(w io.Writer) (err error) {
 
 // CanSign returns true iff this public key can generate signatures
 func (pk *PublicKey) CanSign() bool {
-	return pk.PubKeyAlgo != PubKeyAlgoRSAEncryptOnly && pk.PubKeyAlgo != PubKeyAlgoElGamal
+	return pk.PubKeyAlgo != PubKeyAlgoRSAEncryptOnly && pk.PubKeyAlgo != PubKeyAlgoElGamal && pk.PubKeyAlgo != PubKeyAlgoElGamalEncAndSign
 }
 
 // VerifySignature returns nil iff sig is a valid signature, made by this
@@ -852,7 +852,7 @@ func (pk *PublicKey) BitLength() (bitLength uint16, err error) {
 		bitLength = pk.n.bitLength
 	case PubKeyAlgoDSA:
 		bitLength = pk.p.bitLength
-	case PubKeyAlgoElGamal:
+	case PubKeyAlgoElGamal, PubKeyAlgoElGamalEncAndSign:
 		bitLength = pk.p.bitLength
 	default:
 		err = errors.InvalidArgumentError("bad public-key algorithm")
