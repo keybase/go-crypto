@@ -18,12 +18,11 @@ import (
 )
 
 func decodeBase64(in string) []byte {
-	out := make([]byte, base64.StdEncoding.DecodedLen(len(in)))
-	n, err := base64.StdEncoding.Decode(out, []byte(in))
+	out, err := base64.StdEncoding.DecodeString(in)
 	if err != nil {
 		return nil
 	}
-	return out[0:n]
+	return out
 }
 
 type DecryptPKCS1v15Test struct {
