@@ -1,11 +1,10 @@
-
 package openpgp
 
 import (
-	"testing"
-	"github.com/keybase/go-crypto/openpgp/packet"
 	"github.com/keybase/go-crypto/openpgp/armor"
+	"github.com/keybase/go-crypto/openpgp/packet"
 	"strings"
+	"testing"
 )
 
 // Here is some test data to actually get ECDH encryption and
@@ -76,7 +75,7 @@ func openAndDecryptKey(t *testing.T, key string, passphrase string) EntityList {
 		t.Fatal("expected only 1 key")
 	}
 	k := entities[0]
-	unlocker := func (k *packet.PrivateKey) {
+	unlocker := func(k *packet.PrivateKey) {
 		if !k.Encrypted {
 			t.Fatal("expected a locked key")
 		}
@@ -91,7 +90,6 @@ func openAndDecryptKey(t *testing.T, key string, passphrase string) EntityList {
 	}
 	return entities
 }
-
 
 func TestECDHDecryptionNotImplemented(t *testing.T) {
 	keys := openAndDecryptKey(t, privKey, passphrase)

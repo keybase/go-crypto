@@ -140,7 +140,7 @@ func TestExternallyRevocableKey(t *testing.T) {
 	//    data: [1024 bits]
 
 	id := uint64(0xA42704B92866382A)
-	keys := kring.KeysById(id)
+	keys := kring.KeysById(id, nil)
 	if len(keys) != 1 {
 		t.Errorf("Expected to find key id %X, but got %d matches", id, len(keys))
 	}
@@ -155,11 +155,11 @@ func TestKeyRevocation(t *testing.T) {
 	ids := []uint64{0xA401D9F09A34F7C0, 0x5CD3BE0A1BA3CD60}
 
 	for _, id := range ids {
-		keys := kring.KeysById(id)
+		keys := kring.KeysById(id, nil)
 		if len(keys) != 1 {
 			t.Errorf("Expected KeysById to find revoked key %X, but got %d matches", id, len(keys))
 		}
-		keys = kring.KeysByIdUsage(id, 0)
+		keys = kring.KeysByIdUsage(id, nil, 0)
 		if len(keys) != 0 {
 			t.Errorf("Expected KeysByIdUsage to filter out revoked key %X, but got %d matches", id, len(keys))
 		}
@@ -178,22 +178,22 @@ func TestSubkeyRevocation(t *testing.T) {
 	revokedKey := uint64(0x677815E371C2FD23)
 
 	for _, id := range validKeys {
-		keys := kring.KeysById(id)
+		keys := kring.KeysById(id, nil)
 		if len(keys) != 1 {
 			t.Errorf("Expected KeysById to find key %X, but got %d matches", id, len(keys))
 		}
-		keys = kring.KeysByIdUsage(id, 0)
+		keys = kring.KeysByIdUsage(id, nil, 0)
 		if len(keys) != 1 {
 			t.Errorf("Expected KeysByIdUsage to find key %X, but got %d matches", id, len(keys))
 		}
 	}
 
-	keys := kring.KeysById(revokedKey)
+	keys := kring.KeysById(revokedKey, nil)
 	if len(keys) != 1 {
 		t.Errorf("Expected KeysById to find key %X, but got %d matches", revokedKey, len(keys))
 	}
 
-	keys = kring.KeysByIdUsage(revokedKey, 0)
+	keys = kring.KeysByIdUsage(revokedKey, nil, 0)
 	if len(keys) != 0 {
 		t.Errorf("Expected KeysByIdUsage to filter out revoked key %X, but got %d matches", revokedKey, len(keys))
 	}
@@ -212,7 +212,7 @@ func TestKeyUsage(t *testing.T) {
 	encrypters := []uint64{0x09C0C7D9936C9153, 0xC104E98664D5F5BB}
 
 	for _, id := range certifiers {
-		keys := kring.KeysByIdUsage(id, packet.KeyFlagCertify)
+		keys := kring.KeysByIdUsage(id, nil, packet.KeyFlagCertify)
 		if len(keys) == 1 {
 			if keys[0].PublicKey.KeyId != id {
 				t.Errorf("Expected to find certifier key id %X, but got %X", id, keys[0].PublicKey.KeyId)
@@ -223,7 +223,7 @@ func TestKeyUsage(t *testing.T) {
 	}
 
 	for _, id := range signers {
-		keys := kring.KeysByIdUsage(id, packet.KeyFlagSign)
+		keys := kring.KeysByIdUsage(id, nil, packet.KeyFlagSign)
 		if len(keys) == 1 {
 			if keys[0].PublicKey.KeyId != id {
 				t.Errorf("Expected to find signing key id %X, but got %X", id, keys[0].PublicKey.KeyId)
@@ -233,14 +233,14 @@ func TestKeyUsage(t *testing.T) {
 		}
 
 		// This keyring contains no encryption keys that are also good for signing.
-		keys = kring.KeysByIdUsage(id, packet.KeyFlagEncryptStorage|packet.KeyFlagEncryptCommunications)
+		keys = kring.KeysByIdUsage(id, nil, packet.KeyFlagEncryptStorage|packet.KeyFlagEncryptCommunications)
 		if len(keys) != 0 {
 			t.Errorf("Unexpected match for encryption key id %X", id)
 		}
 	}
 
 	for _, id := range encrypters {
-		keys := kring.KeysByIdUsage(id, packet.KeyFlagEncryptStorage|packet.KeyFlagEncryptCommunications)
+		keys := kring.KeysByIdUsage(id, nil, packet.KeyFlagEncryptStorage|packet.KeyFlagEncryptCommunications)
 		if len(keys) == 1 {
 			if keys[0].PublicKey.KeyId != id {
 				t.Errorf("Expected to find encryption key id %X, but got %X", id, keys[0].PublicKey.KeyId)
@@ -250,7 +250,7 @@ func TestKeyUsage(t *testing.T) {
 		}
 
 		// This keyring contains no encryption keys that are also good for signing.
-		keys = kring.KeysByIdUsage(id, packet.KeyFlagSign)
+		keys = kring.KeysByIdUsage(id, nil, packet.KeyFlagSign)
 		if len(keys) != 0 {
 			t.Errorf("Unexpected match for signing key id %X", id)
 		}
@@ -385,7 +385,7 @@ func testPrivateKey(t *testing.T, key string, which string, password string) {
 		t.Fatal("expected only 1 key")
 	}
 	k := entities[0]
-	unlocker := func (k *packet.PrivateKey) {
+	unlocker := func(k *packet.PrivateKey) {
 		if !k.Encrypted {
 			t.Fatal("expected a locked key")
 		}
