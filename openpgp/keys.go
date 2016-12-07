@@ -206,6 +206,9 @@ func keyMatchesIdAndFingerprint(key *packet.PublicKey, id uint64, fp []byte) boo
 }
 
 // KeysById returns the set of keys that have the given key id.
+// fp can be optionally supplied, which is the full key fingerprint.
+// If it's provided, then it must match. This comes up in the case
+// of GPG subpacket 33.
 func (el EntityList) KeysById(id uint64, fp []byte) (keys []Key) {
 	for _, e := range el {
 		if keyMatchesIdAndFingerprint(e.PrimaryKey, id, fp) {
@@ -241,6 +244,9 @@ func (el EntityList) KeysById(id uint64, fp []byte) (keys []Key) {
 // KeysByIdAndUsage returns the set of keys with the given id that also meet
 // the key usage given by requiredUsage.  The requiredUsage is expressed as
 // the bitwise-OR of packet.KeyFlag* values.
+// fp can be optionally supplied, which is the full key fingerprint.
+// If it's provided, then it must match. This comes up in the case
+// of GPG subpacket 33.
 func (el EntityList) KeysByIdUsage(id uint64, fp []byte, requiredUsage byte) (keys []Key) {
 	for _, key := range el.KeysById(id, fp) {
 		if len(key.Entity.Revocations) > 0 {
