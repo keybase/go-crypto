@@ -423,11 +423,9 @@ func parseSignatureSubpacket(sig *Signature, subpacket []byte, isHashed bool) (r
 	case prefKeyServerSubpacket:
 		sig.PreferredKeyServer = string(subpacket[:])
 	case issuerFingerprint:
-		raw := subpacket[1:]
-		l := len(raw)
-		fp := make([]byte, l)
-		copy(fp, raw)
-		sig.IssuerFingerprint = fp
+		// The first byte is how many bytes the fingerprint is, but we'll just
+		// read until the end of the subpacket, so we'll ignore it.
+		sig.IssuerFingerprint = append([]byte{}, subpacket[1:]...)
 	default:
 		if isCritical {
 			err = errors.UnsupportedError("unknown critical signature subpacket type " + strconv.Itoa(int(packetType)))

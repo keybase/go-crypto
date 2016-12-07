@@ -68,13 +68,22 @@ type Key struct {
 
 // A KeyRing provides access to public and private keys.
 type KeyRing interface {
+
 	// KeysById returns the set of keys that have the given key id.
+	// fp can be optionally supplied, which is the full key fingerprint.
+	// If it's provided, then it must match. This comes up in the case
+	// of GPG subpacket 33.
 	KeysById(id uint64, fp []byte) []Key
+
 	// KeysByIdAndUsage returns the set of keys with the given id
 	// that also meet the key usage given by requiredUsage.
 	// The requiredUsage is expressed as the bitwise-OR of
 	// packet.KeyFlag* values.
+	// fp can be optionally supplied, which is the full key fingerprint.
+	// If it's provided, then it must match. This comes up in the case
+	// of GPG subpacket 33.
 	KeysByIdUsage(id uint64, fp []byte, requiredUsage byte) []Key
+
 	// DecryptionKeys returns all private keys that are valid for
 	// decryption.
 	DecryptionKeys() []Key

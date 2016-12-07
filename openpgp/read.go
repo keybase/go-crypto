@@ -325,13 +325,6 @@ type signatureCheckReader struct {
 	md             *MessageDetails
 }
 
-func pickFirstNonNilError(e1, e2 error) error {
-	if e1 != nil {
-		return e1
-	}
-	return e2
-}
-
 func (scr *signatureCheckReader) Read(buf []byte) (n int, err error) {
 	n, err = scr.md.LiteralData.Body.Read(buf)
 	scr.wrappedHash.Write(buf[:n])
@@ -344,14 +337,16 @@ func (scr *signatureCheckReader) Read(buf []byte) (n int, err error) {
 
 		var ok bool
 		if scr.md.Signature, ok = p.(*packet.Signature); ok {
-			var err1, err2 error
+			var err error
 			if fingerprint := scr.md.Signature.IssuerFingerprint; fingerprint != nil {
 				if !hmac.Equal(fingerprint, scr.md.SignedBy.PublicKey.Fingerprint[:]) {
-					err1 = errors.StructuralError("bad key fingerprint")
+					err = errors.StructuralError("bad key fingerprint")
 				}
 			}
-			err2 = scr.md.SignedBy.PublicKey.VerifySignature(scr.h, scr.md.Signature)
-			scr.md.SignatureError = pickFirstNonNilError(err1, err2)
+			if err != nil {
+				err = scr.md.SignedBy.PublicKey.VerifySignature(scr.h, scr.md.Signature)
+			}
+			scr.md.SignatureError = err
 		} else if scr.md.SignatureV3, ok = p.(*packet.SignatureV3); ok {
 			scr.md.SignatureError = scr.md.SignedBy.PublicKey.VerifySignatureV3(scr.h, scr.md.SignatureV3)
 		} else {
