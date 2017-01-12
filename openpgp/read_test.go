@@ -574,6 +574,10 @@ func TestBadSignature(t *testing.T) {
 	testSignedV4MessageWithError(t, badSig, keyForBagSig, true)
 }
 
+func TestBengtSignature(t *testing.T) {
+	testSignedV4Message(t, bengtSig, bengtKey)
+}
+
 func testSignedV3Message(t *testing.T, armoredMsg string, armoredKey string) {
 	sig, err := armor.Decode(strings.NewReader(armoredMsg))
 	if err != nil {
@@ -2429,5 +2433,52 @@ hJwgAgdhGeUfEHMQQibvMQ5AgEVx3wcxDi+vJYHDgvrFCpurRPODyDlFyTrCxYc/
 +/j9t+7yf43jG4Xvgn/okz/fe/L9l+88un/zM+x9cvX6R68+qvx967XTD34nX/wL
 bL0JeQ==
 =965F
------END PGP MESSAGE-----
-`
+-----END PGP MESSAGE-----`
+
+const bengtKey = `-----BEGIN PGP PUBLIC KEY BLOCK-----
+Charset: UTF-8
+
+xv8AAABSBFOPJKkTCCqGSM49AwEHAgMEyzUHBzhmkM0aV+7cUoLOD39xXR5J1ryY
+YCSdFOcJOtO0piEBUX1Qr88Z8uUULADS93INugEUNqSxOGWuAu4WTM3/AAAAGDxi
+ZW5ndC5sdWVlcnNAZ21haWwuY29tPsL/AAAAZgQQEwgAGP8AAAAFglOPJKn/AAAA
+CZBcFMyn0JbJmAAAreQBAL/ipjkc+3WA3zaJQVImdGnlTL6ukN1CM6PPqWEvLFPA
+AQCkJfkosi8b2MVGgAck3OZTxPuF6j414eJN51AvtpzXZc7/AAAAVgRTjySpEggq
+hkjOPQMBBwIDBOKJkCiqTlPCPbnIKfFPUB3zoeGVwYLXar5bROtJRVO+8Ie2UEgt
+XP0+aKQ/7EQWrrqFM9b9Xo/3YUSiQCixb10DAQgHwv8AAABmBBgTCAAY/wAAAAWC
+U48kqf8AAAAJkFwUzKfQlsmYAAAXLgEAj18rfkwfFBkUhbZe4sU3QE+sgVpfCBVr
+AfiqBnIZ5l0BALIoQEboLEbb3cj1SqTBfXytnnojPuRDES6M9qzulc9c
+=WJdL
+-----END PGP PUBLIC KEY BLOCK-----`
+
+const bengtSig = `-----BEGIN PGP MESSAGE-----
+Version: Keybase OpenPGP v2.0.62
+Comment: https://keybase.io/crypto
+
+yMP8AniczVa/i1xVFJ74ixgRhUjASnmdsIZz7u8b7PwLLAKCxvHec8/dfdndmcmb
+t0mWsKWFlSAisRE7sRGElKZwiRBRIQErCwsLsTVIwELwvJl1sxsjSojgFMPMu+99
+9zvf953z7rUnHx4dO/76M998fOP9ry4f+fr69a3RqxePTi41eVq2m1OXGtpoedIP
+vyZpk5tTzTpv5zTnk+30+Qucm5XmPHfzdjqRJUfaGYzJkPWQfQ2UC2lwNsaAYLVG
+qJRibHZWBpgBlDcKz/vxelvkeUDUKesSNDpdCsfiNRWHylauESjEnBSyMybp4mvE
+AEX+aQ4lsOAnbw0koVTbySp3s64dmDfGUSRllGMIygfmkE0olSyhIUq+QJQ7YpAH
+16bz/lCNzYLpeEHvHvc/YN5bC7iiGKrSgY3TAZWz2UbISmGI0WSA4cY5d3t+ZJ6s
+9oOifZdofdBUqLc0H361ZbzvTlxpNpJILddoLYk+zSmUDZz3EPUhRAE6386pHUAX
+hJABo3ZVARQfkg4p2BoCmZyK9xibfTsHrQ6L75PJnkpS3hBHLNoVG4DIZ58dh6SC
+V9WSOyAmoDXkaw7RJZStCvtqREBPhiGTKVzYIPmi2eTiTEWXUXENoj2FyqBETOE+
+W52NhZAo8dr/itmZlabjzWnP41k3ndYlP+rbzaUlKoKPoFYa2uo62TYVdME5iVAh
+yUy0jJYsZ53EPIeaqnDWTLp6CE6MMQUDJgeYcspuiCnvgTsFNizBZx2fF/AQkkUw
+KKFG0SChomQrArA2IWhyIZeaBD/5UE2IJDmQTGsn0lTGof/3ahkEXtSzmBprTOvj
+kvo0Pjsf0rc/PvoLbd9z1/xt4hYY4357JgvCc96nfqAuK3M+N5kuL7ary5ZkiugM
+B7EgEJPjDMk74eu09A8ZQme5oMcqXiWOQTR0jIFKllqtg9os0fb221k56MSgb4i4
+74QibV321jmlcgBnPICqSpGIFNBWUTY6V71W8mDSPlsbrcy7WKFIQOiQEyhYC/A9
+J3wl5whsCuKkZCYZk1E6P1ewphRvtMxSaxSSluzpHLMUX1KKSkf2i2n0L50o083U
+TvZlf5HakzTdbBbS91OabgwzaDK/2wwJBd7TDzhgiM6ijPKJhDNR9Qw+R1sLuEAk
+LUPJofesdDU2QTQqG4Ac0RaQcgL8oyEe8E5rVIAQtQf2SsUcsHpUFSJKio2yubKW
+dcy1IivFnpM0vJUWsKpopS3cbcgSfM+QB+D2/Rsy7Vbv3xA82CGQnZVIyQgymUUe
+TOJHiFWEwsDK2xxFtliMLMhAj9YYUbpkGWPyxsl/MeTMYp9xn9qNgfssbW9MUxmv
+pfnag3HkP6piZ3hFLmrYe1MeOLkM4u2nLMhJQb6dZOPirO14PFiDVkYByOfO5Ezg
+bTAxUyiEoSDrzDIl0acsxwEni6R0yS5Byhkc5FAigk5yUarAO5Vqef32aVUwpd5J
+6rc6bnZ233hkdPzY6LFHHxrOY6Njjz/95yntlyuj35+rR2+9+93NsHXi7dtvfnjp
+7O47H/x45bMX9E+/vvfRK7e+vH5k9P21Zz+//cPl7rcb3z7R37i6e/rm1eaL0yd2
+P3n505+feukt+gPf/gF6
+=oTR6
+-----END PGP MESSAGE-----`
