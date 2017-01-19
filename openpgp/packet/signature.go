@@ -606,8 +606,8 @@ func (sig *Signature) Sign(h hash.Hash, priv *PrivateKey, config *Config) (err e
 			}
 		}
 		if err == nil {
-			sig.ECDSASigR = fromBig(r)
-			sig.ECDSASigS = fromBig(s)
+			sig.ECDSASigR = FromBig(r)
+			sig.ECDSASigS = FromBig(s)
 		}
 	default:
 		err = errors.UnsupportedError("public key algorithm: " + strconv.Itoa(int(sig.PubKeyAlgo)))
