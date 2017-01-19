@@ -10,7 +10,6 @@ import (
 	"crypto/cipher"
 	"crypto/dsa"
 	"crypto/ecdsa"
-	"crypto/rsa"
 	"crypto/sha1"
 	"io"
 	"io/ioutil"
