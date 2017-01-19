@@ -17,7 +17,7 @@ import (
 	"strings"
 	"testing"
 
-	"golang.org/x/crypto/ed25519"
+	"github.com/keybase/go-crypto/ed25519"
 	"github.com/keybase/go-crypto/ssh/testdata"
 )
 

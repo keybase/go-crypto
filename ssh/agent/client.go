@@ -9,11 +9,6 @@
 //
 // References:
 //  [PROTOCOL.agent]:    http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/usr.bin/ssh/PROTOCOL.agent?rev=HEAD
-package agent // import "golang.org/x/crypto/ssh/agent"
-
-References:
-  [PROTOCOL.agent]:    http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/usr.bin/ssh/PROTOCOL.agent?rev=HEAD
-*/
 package agent // import "github.com/keybase/go-crypto/ssh/agent"
 
 import (
@@ -30,7 +25,7 @@ import (
 	"math/big"
 	"sync"
 
-	"golang.org/x/crypto/ed25519"
+	"github.com/keybase/go-crypto/ed25519"
 	"github.com/keybase/go-crypto/ssh"
 )
 

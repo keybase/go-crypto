@@ -16,7 +16,7 @@ import (
 	"log"
 	"math/big"
 
-	"golang.org/x/crypto/ed25519"
+	"github.com/keybase/go-crypto/ed25519"
 	"github.com/keybase/go-crypto/ssh"
 )
 
