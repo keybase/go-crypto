@@ -391,8 +391,6 @@ func readToNextPublicKey(packets *packet.Reader) (err error) {
 			return
 		}
 	}
-
-	panic("unreachable")
 }
 
 // ReadEntity reads an entity (public key, identities, subkeys etc) from the
@@ -667,6 +665,12 @@ func NewEntity(name, comment, email string, config *packet.Config) (*Entity, err
 			FlagCertify:  true,
 			IssuerKeyId:  &e.PrimaryKey.KeyId,
 		},
+	}
+
+	// If the user passes in a DefaultHash via packet.Config,
+	// set the PreferredHash for the SelfSignature.
+	if config != nil && config.DefaultHash != 0 {
+		e.Identities[uid.Id].SelfSignature.PreferredHash = []uint8{hashToHashId(config.DefaultHash)}
 	}
 
 	e.Subkeys = make([]Subkey, 1)

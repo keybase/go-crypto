@@ -2,8 +2,14 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-/*
-  Package agent implements a client to an ssh-agent daemon.
+// Package agent implements the ssh-agent protocol, and provides both
+// a client and a server. The client can talk to a standard ssh-agent
+// that uses UNIX sockets, and one could implement an alternative
+// ssh-agent process using the sample server.
+//
+// References:
+//  [PROTOCOL.agent]:    http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/usr.bin/ssh/PROTOCOL.agent?rev=HEAD
+package agent // import "golang.org/x/crypto/ssh/agent"
 
 References:
   [PROTOCOL.agent]:    http://cvsweb.openbsd.org/cgi-bin/cvsweb/src/usr.bin/ssh/PROTOCOL.agent?rev=HEAD
@@ -24,6 +30,7 @@ import (
 	"math/big"
 	"sync"
 
+	"golang.org/x/crypto/ed25519"
 	"github.com/keybase/go-crypto/ssh"
 )
 
@@ -75,7 +82,8 @@ type AddedKey struct {
 
 // See [PROTOCOL.agent], section 3.
 const (
-	agentRequestV1Identities = 1
+	agentRequestV1Identities   = 1
+	agentRemoveAllV1Identities = 9
 
 	// 3.2 Requests from client to agent for protocol 2 key operations
 	agentAddIdentity         = 17
@@ -182,10 +190,13 @@ func (k *Key) Marshal() []byte {
 	return k.Blob
 }
 
-// Verify satisfies the ssh.PublicKey interface, but is not
-// implemented for agent keys.
+// Verify satisfies the ssh.PublicKey interface.
 func (k *Key) Verify(data []byte, sig *ssh.Signature) error {
-	return errors.New("agent: agent key does not know how to verify")
+	pubKey, err := ssh.ParsePublicKey(k.Blob)
+	if err != nil {
+		return fmt.Errorf("agent: bad public key: %v", err)
+	}
+	return pubKey.Verify(data, sig)
 }
 
 type wireKey struct {
@@ -375,6 +386,8 @@ func unmarshal(packet []byte) (interface{}, error) {
 		msg = new(identitiesAnswerAgentMsg)
 	case agentSignResponse:
 		msg = new(signResponseAgentMsg)
+	case agentV1IdentitiesAnswer:
+		msg = new(agentV1IdentityMsg)
 	default:
 		return nil, fmt.Errorf("agent: unknown type tag %d", packet[0])
 	}
@@ -385,7 +398,7 @@ func unmarshal(packet []byte) (interface{}, error) {
 }
 
 type rsaKeyMsg struct {
-	Type        string `sshtype:"17"`
+	Type        string `sshtype:"17|25"`
 	N           *big.Int
 	E           *big.Int
 	D           *big.Int
@@ -397,7 +410,7 @@ type rsaKeyMsg struct {
 }
 
 type dsaKeyMsg struct {
-	Type        string `sshtype:"17"`
+	Type        string `sshtype:"17|25"`
 	P           *big.Int
 	Q           *big.Int
 	G           *big.Int
@@ -408,10 +421,18 @@ type dsaKeyMsg struct {
 }
 
 type ecdsaKeyMsg struct {
-	Type        string `sshtype:"17"`
+	Type        string `sshtype:"17|25"`
 	Curve       string
 	KeyBytes    []byte
 	D           *big.Int
+	Comments    string
+	Constraints []byte `ssh:"rest"`
+}
+
+type ed25519KeyMsg struct {
+	Type        string `sshtype:"17|25"`
+	Pub         []byte
+	Priv        []byte
 	Comments    string
 	Constraints []byte `ssh:"rest"`
 }
@@ -457,6 +478,14 @@ func (c *client) insertKey(s interface{}, comment string, constraints []byte) er
 			Comments:    comment,
 			Constraints: constraints,
 		})
+	case *ed25519.PrivateKey:
+		req = ssh.Marshal(ed25519KeyMsg{
+			Type:        ssh.KeyAlgoED25519,
+			Pub:         []byte(*k)[32:],
+			Priv:        []byte(*k),
+			Comments:    comment,
+			Constraints: constraints,
+		})
 	default:
 		return fmt.Errorf("agent: unsupported key type %T", s)
 	}
@@ -477,7 +506,7 @@ func (c *client) insertKey(s interface{}, comment string, constraints []byte) er
 }
 
 type rsaCertMsg struct {
-	Type        string `sshtype:"17"`
+	Type        string `sshtype:"17|25"`
 	CertBytes   []byte
 	D           *big.Int
 	Iqmp        *big.Int // IQMP = Inverse Q Mod P
@@ -488,7 +517,7 @@ type rsaCertMsg struct {
 }
 
 type dsaCertMsg struct {
-	Type        string `sshtype:"17"`
+	Type        string `sshtype:"17|25"`
 	CertBytes   []byte
 	X           *big.Int
 	Comments    string
@@ -496,14 +525,23 @@ type dsaCertMsg struct {
 }
 
 type ecdsaCertMsg struct {
-	Type        string `sshtype:"17"`
+	Type        string `sshtype:"17|25"`
 	CertBytes   []byte
 	D           *big.Int
 	Comments    string
 	Constraints []byte `ssh:"rest"`
 }
 
-// Insert adds a private key to the agent. If a certificate is given,
+type ed25519CertMsg struct {
+	Type        string `sshtype:"17|25"`
+	CertBytes   []byte
+	Pub         []byte
+	Priv        []byte
+	Comments    string
+	Constraints []byte `ssh:"rest"`
+}
+
+// Add adds a private key to the agent. If a certificate is given,
 // that certificate is added instead as public key.
 func (c *client) Add(key AddedKey) error {
 	var constraints []byte
@@ -547,17 +585,28 @@ func (c *client) insertCert(s interface{}, cert *ssh.Certificate, comment string
 		})
 	case *dsa.PrivateKey:
 		req = ssh.Marshal(dsaCertMsg{
-			Type:      cert.Type(),
-			CertBytes: cert.Marshal(),
-			X:         k.X,
-			Comments:  comment,
+			Type:        cert.Type(),
+			CertBytes:   cert.Marshal(),
+			X:           k.X,
+			Comments:    comment,
+			Constraints: constraints,
 		})
 	case *ecdsa.PrivateKey:
 		req = ssh.Marshal(ecdsaCertMsg{
-			Type:      cert.Type(),
-			CertBytes: cert.Marshal(),
-			D:         k.D,
-			Comments:  comment,
+			Type:        cert.Type(),
+			CertBytes:   cert.Marshal(),
+			D:           k.D,
+			Comments:    comment,
+			Constraints: constraints,
+		})
+	case *ed25519.PrivateKey:
+		req = ssh.Marshal(ed25519CertMsg{
+			Type:        cert.Type(),
+			CertBytes:   cert.Marshal(),
+			Pub:         []byte(*k)[32:],
+			Priv:        []byte(*k),
+			Comments:    comment,
+			Constraints: constraints,
 		})
 	default:
 		return fmt.Errorf("agent: unsupported key type %T", s)

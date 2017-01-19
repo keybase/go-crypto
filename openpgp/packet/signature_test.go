@@ -41,6 +41,42 @@ func TestSignatureReserialize(t *testing.T) {
 	}
 }
 
+func TestSignUserId(t *testing.T) {
+	sig := &Signature{
+		SigType:    SigTypeGenericCert,
+		PubKeyAlgo: PubKeyAlgoRSA,
+		Hash:       0, // invalid hash function
+	}
+
+	packet, err := Read(readerFromHex(rsaPkDataHex))
+	if err != nil {
+		t.Fatalf("failed to deserialize public key: %v", err)
+	}
+	pubKey := packet.(*PublicKey)
+
+	packet, err = Read(readerFromHex(privKeyRSAHex))
+	if err != nil {
+		t.Fatalf("failed to deserialize private key: %v", err)
+	}
+	privKey := packet.(*PrivateKey)
+
+	err = sig.SignUserId("", pubKey, privKey, nil)
+	if err == nil {
+		t.Errorf("did not receive an error when expected")
+	}
+
+	sig.Hash = crypto.SHA256
+	err = privKey.Decrypt([]byte("testing"))
+	if err != nil {
+		t.Fatalf("failed to decrypt private key: %v", err)
+	}
+
+	err = sig.SignUserId("", pubKey, privKey, nil)
+	if err != nil {
+		t.Errorf("failed to sign user id: %v", err)
+	}
+}
+
 func TestSignWithNilPrivateKey(t *testing.T) {
 	sig := new(Signature)
 	hash := crypto.SHA256.New()
