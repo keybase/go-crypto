@@ -283,13 +283,9 @@ func (el EntityList) KeysByIdUsage(id uint64, fp []byte, requiredUsage byte) (ke
 				usage |= packet.KeyFlagEncryptCommunications
 				usage |= packet.KeyFlagEncryptStorage
 
-			case key.PublicKey.PubKeyAlgo == packet.PubKeyAlgoDSA:
-				usage |= packet.KeyFlagSign
-
-			case key.PublicKey.PubKeyAlgo == packet.PubKeyAlgoECDSA:
-				usage |= packet.KeyFlagSign
-
-			case key.PublicKey.PubKeyAlgo == packet.PubKeyAlgoEdDSA:
+			case key.PublicKey.PubKeyAlgo == packet.PubKeyAlgoDSA ||
+				key.PublicKey.PubKeyAlgo == packet.PubKeyAlgoECDSA ||
+				key.PublicKey.PubKeyAlgo == packet.PubKeyAlgoEdDSA:
 				usage |= packet.KeyFlagSign
 
 			// For a primary RSA key without any key flags, be as permissiable
