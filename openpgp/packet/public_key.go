@@ -322,6 +322,7 @@ func NewECDSAPublicKey(creationTime time.Time, pub *ecdsa.PublicKey) *PublicKey 
 		PublicKey:    pub,
 		ec:           new(ecdsaKey),
 	}
+
 	switch pub.Curve {
 	case elliptic.P256():
 		pk.ec.oid = oidCurveP256
@@ -335,7 +336,10 @@ func NewECDSAPublicKey(creationTime time.Time, pub *ecdsa.PublicKey) *PublicKey 
 		pk.ec.oid = oidCurveP384r1
 	case brainpool.P512r1():
 		pk.ec.oid = oidCurveP512r1
+	default:
+		panic("unknown elliptic curve")
 	}
+
 	pk.ec.p.bytes = elliptic.Marshal(pub.Curve, pub.X, pub.Y)
 	pk.ec.p.bitLength = uint16(8 * len(pk.ec.p.bytes))
 
@@ -658,7 +662,6 @@ func (pk *PublicKey) VerifySignature(signed hash.Hash, sig *Signature) (err erro
 	default:
 		return errors.SignatureError("Unsupported public key algorithm used in signature")
 	}
-	panic("unreachable")
 }
 
 // VerifySignatureV3 returns nil iff sig is a valid signature, made by this
@@ -703,7 +706,6 @@ func (pk *PublicKey) VerifySignatureV3(signed hash.Hash, sig *SignatureV3) (err 
 	default:
 		panic("shouldn't happen")
 	}
-	panic("unreachable")
 }
 
 // keySignatureHash returns a Hash of the message that needs to be signed for
