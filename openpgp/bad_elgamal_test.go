@@ -7,6 +7,7 @@ import (
 
 	"github.com/keybase/go-crypto/openpgp/clearsign"
 	"github.com/keybase/go-crypto/openpgp/errors"
+	"github.com/keybase/go-crypto/openpgp/packet"
 )
 
 func TestBadElgamal(t *testing.T) {
@@ -27,9 +28,13 @@ func TestBadElgamal(t *testing.T) {
 	if len(entity.BadSubkeys) != 1 {
 		t.Fatal("expected 1 bad subkey")
 	}
-	err = entity.BadSubkeys[0].Err
+	badSubkey := entity.BadSubkeys[0]
+	err = badSubkey.Err
 	if _, ok := err.(errors.DeprecatedKeyError); !ok {
-		t.Fatal("expected DeprecatedKeyError")
+		t.Fatalf("expected DeprecatedKeyError, got: %s", err)
+	}
+	if algo := badSubkey.Subkey.PublicKey.PubKeyAlgo; algo != packet.PubKeyAlgoBadElGamal {
+		t.Fatalf("Unexpected bad key PubKeyAlgo, expected 20, got %d", algo)
 	}
 
 	// When reading a signature produced by algo 20 key, checking
