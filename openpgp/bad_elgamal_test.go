@@ -8,6 +8,8 @@ import (
     //"io/ioutil"
     "strings"
     "testing"
+
+    "github.com/davecgh/go-spew/spew"
 )
 
 func TestBadElgamal(t *testing.T) {
@@ -18,6 +20,8 @@ func TestBadElgamal(t *testing.T) {
     if len(entities) != 1 {
         t.Fatal("expected only 1 key")
     }
+    entity := entities[0]
+    spew.Dump(entity)
 }
 
 const publicKey = `-----BEGIN PGP PUBLIC KEY BLOCK-----
