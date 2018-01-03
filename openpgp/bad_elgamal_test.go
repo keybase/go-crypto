@@ -1,27 +1,52 @@
 package openpgp
 
 import (
-    //"bytes"
-    //"github.com/keybase/go-crypto/openpgp/armor"
-    //"github.com/keybase/go-crypto/openpgp/packet"
-    //"io"
-    //"io/ioutil"
-    "strings"
-    "testing"
+	"bytes"
+	"strings"
+	"testing"
 
-    "github.com/davecgh/go-spew/spew"
+	"github.com/keybase/go-crypto/openpgp/clearsign"
+	"github.com/keybase/go-crypto/openpgp/errors"
 )
 
 func TestBadElgamal(t *testing.T) {
-    entities, err := ReadArmoredKeyRing(strings.NewReader(publicKey))
-    if err != nil {
-        t.Fatalf("error opening keys: %v", err)
-    }
-    if len(entities) != 1 {
-        t.Fatal("expected only 1 key")
-    }
-    entity := entities[0]
-    spew.Dump(entity)
+	// When algo 20 key is read, we go ahead with parsing and
+	// verifying, but the key ends up in BadSubkeys with
+	// DeprecatedKeyError.
+	entities, err := ReadArmoredKeyRing(strings.NewReader(publicKey))
+	if err != nil {
+		t.Fatalf("error opening keys: %v", err)
+	}
+	if len(entities) != 1 {
+		t.Fatal("expected only 1 key")
+	}
+	entity := entities[0]
+	if len(entity.Subkeys) != 1 {
+		t.Fatal("expected 1 subkey")
+	}
+	if len(entity.BadSubkeys) != 1 {
+		t.Fatal("expected 1 bad subkey")
+	}
+	err = entity.BadSubkeys[0].Err
+	if _, ok := err.(errors.DeprecatedKeyError); !ok {
+		t.Fatal("expected DeprecatedKeyError")
+	}
+
+	// When reading a signature produced by algo 20 key, checking
+	// should fail with UnsupportedError - signatures also have
+	// algorithm field, and  PubKeyAlgoBadElGamal is not recognized
+	// there. See signature_v3.go:parse.
+	b, _ := clearsign.Decode([]byte(clearsignMsg))
+	if b == nil {
+		t.Fatal("Failed to decode clearsign msg")
+	}
+	_, err = CheckDetachedSignature(entities, bytes.NewBuffer(b.Bytes), b.ArmoredSignature.Body)
+	if err == nil {
+		t.Fatal("Expected to see error when checking clearsign")
+	}
+	if _, ok := err.(errors.UnsupportedError); !ok {
+		t.Fatalf("Unexpected error type: %s", err)
+	}
 }
 
 const publicKey = `-----BEGIN PGP PUBLIC KEY BLOCK-----
@@ -52,3 +77,18 @@ wd0afBLHiEYEGBECAAYFAlpM19cACgkQl+HNHuDC7kU26wCdEXpc0j9DutGh2ABg
 ygm0xrHw5xEAoJonEzW5F3oDhft9cfKk4mR+QAnv
 =qGLg
 -----END PGP PUBLIC KEY BLOCK-----`
+
+const clearsignMsg = `-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+aaa
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.2.0 (GNU/Linux)
+
+iNcDBQFaTOUbUXZ9JopEDEYUAmtOAv427hD+yJD5i8lv2HISIB4XnG5NQcX3HMbp
+4JzS/17T0PVzhbUaoguK4S4HbCy2TKDAiqFW+uTPVD2g/hDdz3iigdZC0q2qATfS
+F4cO0rBiZy0h/MadrW54md5VPd3cruQC/j9P1MQF1pzp1R8DKrI/aD2zUxzv3tR2
+5kMs9zLJFk+sEY3ppati3sUZpwukn4tNXsMVq5VUjKu81jUxr5Te/114gjbk6Oqo
+bvEOhvf8VAzGswfr7Ur2/KN0D5n1Zr5wmA==
+=yqX0
+-----END PGP SIGNATURE-----`

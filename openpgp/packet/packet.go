@@ -416,7 +416,7 @@ const (
 	PubKeyAlgoECDH           PublicKeyAlgorithm = 18
 	PubKeyAlgoECDSA          PublicKeyAlgorithm = 19
 
-	PubKeyAlgoBadElGamal     PublicKeyAlgorithm = 20 // Reserved (deprecated, formerly Elgamal Encrypt or Sign)
+	PubKeyAlgoBadElGamal     PublicKeyAlgorithm = 20 // Reserved (deprecated, formerly ElGamal Encrypt or Sign)
 	// RFC -1
 	PubKeyAlgoEdDSA          PublicKeyAlgorithm = 22
 )

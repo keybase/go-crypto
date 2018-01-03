@@ -936,3 +936,12 @@ func (pk *PublicKey) BitLength() (bitLength uint16, err error) {
 	}
 	return
 }
+
+func (pk *PublicKey) ErrorIfDeprecated() error {
+	switch pk.PubKeyAlgo {
+	case PubKeyAlgoBadElGamal:
+		return errors.DeprecatedKeyError("ElGamal Encrypt or Sign (algo 20) is deprecated")
+	default:
+		return nil
+	}
+}
