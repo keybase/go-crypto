@@ -10,7 +10,7 @@ import (
 	"github.com/keybase/go-crypto/openpgp/packet"
 )
 
-func TestBadElgamal(t *testing.T) {
+func TestBadElgamalSubkey(t *testing.T) {
 	// When algo 20 key is read, we go ahead with parsing and
 	// verifying, but the key ends up in BadSubkeys with
 	// DeprecatedKeyError.
@@ -51,6 +51,16 @@ func TestBadElgamal(t *testing.T) {
 	}
 	if _, ok := err.(errors.UnsupportedError); !ok {
 		t.Fatalf("Unexpected error type: %s", err)
+	}
+}
+
+func TestBadElgamalPrimary(t *testing.T) {
+	// If BadElGamal is primary key, opening should fail with
+	// error opening keys: openpgp: invalid data: primary key cannot be used for signatures
+	// Because PublicKeyBadElGamal is neither valid for Encryption nor Signing.
+	_, err := ReadArmoredKeyRing(strings.NewReader(badPrimaryPublicKey))
+	if err == nil {
+		t.Fatalf("Expected error")
 	}
 }
 
@@ -97,3 +107,19 @@ F4cO0rBiZy0h/MadrW54md5VPd3cruQC/j9P1MQF1pzp1R8DKrI/aD2zUxzv3tR2
 bvEOhvf8VAzGswfr7Ur2/KN0D5n1Zr5wmA==
 =yqX0
 -----END PGP SIGNATURE-----`
+
+const badPrimaryPublicKey = `-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: GnuPG v1.2.0 (GNU/Linux)
+
+mM0EWk0OfxQDAKeN5zgL7Tlq+/gSnlt1NOmykdJMfJdZ+RAkQl3Qc+mUx3MQIAdQ
+6j0mnTl6S3U3ObxZApkcEbxv5TqKSkEc9YeANMA60LlyAwC/iJovXex4rdKPjqi5
+l5csknYcR5bI7wADBQL/dvzDc69C2zw5YJxB0LpAr4dD3i+YaxKu9EnBt3tPz7X/
+T+DCzVXXWcEhMGLjUmKjgfKxpVAfw+gVJ7g0JDouj0YqFJuWqoy9p3rjDHUYmvpD
+11dC/dAWQl8BCXb0VbYitA5QcmltYXJ5IEJhZEVsR4jxBBMUAgAZBQJaTQ5/BAsH
+AwIDFQIDAxYCAQIeAQIXgAAKCRD+XtaXeIetgMMfAv9c1r2E3ap6zXgVS1ynT3h3
+WtwyxWZUN0s5Yz6cFFOlURQg3/U/YCSVfgE4u48FKFUTrvRRtcr5dN5gU8GLBL0L
+WfVsz4cBaPvJS2DBburndGxKpPmk6UzNTCSBUp8qLVMC/i8C2x+aF3t29T0ZRUAv
+pRBgQ1yPlszdN0yLTNnBoJS/Uk50WiJLoR6KhwHzuFcB06Ct4YQ/6qh52/7jOZ1q
+cmK+ol7hDafxDEfviy1T/vH06ZnhZp/jO4yRm+y8jNa9eQ==
+=vLss
+-----END PGP PUBLIC KEY BLOCK-----`
