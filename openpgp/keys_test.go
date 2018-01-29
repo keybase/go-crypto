@@ -2,12 +2,16 @@ package openpgp
 
 import (
 	"bytes"
+	"io"
 	"strings"
 	"testing"
 	"time"
 
+	goerrors "errors"
+
 	"github.com/keybase/go-crypto/openpgp/errors"
 	"github.com/keybase/go-crypto/openpgp/packet"
+	"golang.org/x/crypto/openpgp/armor"
 )
 
 func TestKeyExpiry(t *testing.T) {
@@ -366,6 +370,30 @@ func TestPiotr(t *testing.T) {
 
 func TestOelna(t *testing.T) {
 	testKey(t, oelna, "oelna")
+}
+
+type timeoutReader struct {
+	r io.Reader
+	t time.Time
+}
+
+var errTimeout = goerrors.New("timeout")
+
+func (tr timeoutReader) Read(p []byte) (n int, err error) {
+	if time.Now().After(tr.t) {
+		return 0, errTimeout
+	}
+	return tr.r.Read(p)
+}
+
+func TestCorrupt(t *testing.T) {
+	sr := strings.NewReader(corrupt)
+	tr := timeoutReader{sr, time.Now().Add(5 * time.Second)}
+
+	_, err := ReadArmoredKeyRing(tr)
+	if err.Error() != armor.ArmorCorrupt.Error() {
+		t.Fatal("expected armor.ArmorCorrupt, got ", err)
+	}
 }
 
 func TestBrentMaxwell(t *testing.T) {
@@ -3881,6 +3909,32 @@ CgkQPz43h/BcVhvFKACfXS4YmNzOAwDZqVUIIVJ83xpdcpgAoP3MfQMG2T+sCpzKClSgo9BdQ9SG
 =w6Zv
 
 -----END PGP PUBLIC KEY BLOCK-----`
+
+const corrupt = `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mQGiBEAP4PcRBADDRPKYk4zN+8bmKufn++lYvyRXy2QvT+CB5+eqlZu+ub5AQQdYXP440J1W22Fk
+HCiMBRY8AK7XxNB7RfixHU57fLBHdj9QfpeeRdAr7z9QAAOtBdVwa9sjVJV5iJigIMgrDfzalfa+
+4jfAyfgL7X5gSwMfbtSrGfjoGGmXxI5aEwCg/3BidcIrFxoscJI4imq/K+nNn2cD/RIT6kbdS0WK
+Fc47ibu2/Y8xtV5G9vdhgdKUr1ujr2xJyRRC3Eb+4GhAFRXtqbTZ6thvFIdHjbwafKoeDSzcpgo+
+nnFlPp0yfOC5WYJ+IiS2FEZbv9QBOw4L9t8T4y0vzD6eujcwSLO22/M5Q5yF2oanbk9Yp/8S7/m2
+NdB3fNLLA/43kEJIgAYkSv51Rlci/nLVKrAYcyEMQt9D2W7LzIlR3JpxvFVjhfS1nyJuEqM2RRdQ
+mJl6aL9WVQpqQxC1xO26A9puOWbhw232A1Gd7jRz77Ue74l3wKj/ZPXW90NaGQ8WK9V8PFrVxkOL
+BGkf0F+pFAn32Vj8D0HOxGBxZbGpNbQWb2VsbmEgPG9lbG5hQG9lbG5hLmRlPohXBBARAgAXBQJA
+D+D3BwsJCAcDAgoCGQEFGwMAAAAACgkQPz43h/BcVhsw3ACgjMu7dbscsEHTqUsgwY8bgFloDoUA
+oL+YMsxdSLEij+RaS6Yq/1sHxZztuQINBEAP4PcQCAD2Qle3CH8IF3KiutapQvMF6PlTETlPtvFu
+uUs4INoBp1ajFOmPQFXz0AfGy0OplK33TGSGSfgMg71l6RfUodNQ+PVZX9x2Uk89PY3bzpnhV5JZ
+zf24rnRPxfx2vIPFRzBhznzJZv8V+bv9kV7HAarTW56NoKVyOtQa8L9GAFgr5fSI/VhOSdvNILSd
+5JEHNmszbDgNRR0PfIizHHxbLY7288kjwEPwpVsYjY67VYy4XTjTNP18F1dDox0YbN4zISy1Kv88
+4bEpQBgRjXyEpwpy1obEAxnIByl6ypUM2Zafq9AKUJsCRtMIPWakXUGfnHy9iUsiGSa6q6Jew1Xp
+Mgs7AAICB/9Hxkw9SnbtECQ2LXR0nvhagTaq2CXPqpDtJ4MwRD+oJL4DQaY7EK7hii8eDTq8umxT
+nICdJcxC9hFgXA4ob0NpHwclbmyEHywj4T7gkwOe+jCzwP6MA965tg7O+pqiwdzAlPVTZFMoEMYz
+dvkXNLamRcc1bVUv7YvpVTv+O/BrpZ6P+x4GHGfNl4W3PtQL+O8u2XmoZXh6+tx6PIgNNGxODrWx
+0vYhLzBShsXMALrxmPe5DYPjAd2BR8frpDnawB0GNg5ll2gmoeJOLsYG2/MRa+7CobPja1Fnfop0
+H/71ymWlaxPzMapNVQRw3vdBdGdp55srSFRDvLUHmm1tpHX3iEwEGBECAAwFAkAP4PcFGwwAAAAA
+CgkQPz43h/BcVhvFKACfXS4YmNzOAwDZqVUIIVJ83xpdcpgAoP3MfQMG2T+sCpzKClSgo9BdQ9SG
+=w6Zv
+
+`
 
 const brentmaxwell = `-----BEGIN PGP PUBLIC KEY BLOCK-----
 Version: GnuPG v2
