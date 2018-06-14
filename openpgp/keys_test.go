@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/keybase/go-crypto/openpgp/armor"
 	pgpErrors "github.com/keybase/go-crypto/openpgp/errors"
 	"github.com/keybase/go-crypto/openpgp/packet"
-	"golang.org/x/crypto/openpgp/armor"
 )
 
 func TestKeyExpiry(t *testing.T) {

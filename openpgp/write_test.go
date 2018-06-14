@@ -11,9 +11,11 @@ import (
 	"hash"
 	"io"
 	"io/ioutil"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/keybase/go-crypto/openpgp/armor"
 	"github.com/keybase/go-crypto/openpgp/packet"
 	"github.com/keybase/go-crypto/rsa"
 )
@@ -364,6 +366,77 @@ func TestEncryption(t *testing.T) {
 			if md.Signature == nil {
 				t.Error("signature missing")
 			}
+		}
+	}
+}
+
+func armoredAttachedSign(w io.Writer, signer *Entity, message io.Reader, config *packet.Config) (err error) {
+	out, err := armor.Encode(w, "PGP MESSAGE", nil)
+	if err != nil {
+		return err
+	}
+	in, err := AttachedSign(out, *signer, nil, config)
+	if err != nil {
+		return err
+	}
+	io.Copy(in, message)
+	return in.Close()
+}
+
+func TestSignAttached(t *testing.T) {
+	var testCompressionAlgos = []packet.CompressionAlgo{
+		packet.CompressionNone,
+		packet.CompressionZIP,
+		packet.CompressionZLIB,
+	}
+
+	for _, compAlgo := range testCompressionAlgos {
+		t.Logf("Testing TestSignAttached with compression %v", compAlgo)
+		config := &packet.Config{
+			DefaultCompressionAlgo: compAlgo,
+		}
+
+		kring, _ := ReadKeyRing(readerFromHex(testKeys1And2PrivateHex))
+		out := bytes.NewBuffer(nil)
+		message := bytes.NewBufferString(signedInput)
+		err := armoredAttachedSign(out, kring[0], message, config)
+		if err != nil {
+			t.Error(err)
+		}
+
+		t.Logf("Got payload:")
+		t.Logf("%s", out.String())
+
+		sig, err := armor.Decode(strings.NewReader(out.String()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		md, err := ReadMessage(sig.Body, kring, nil, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		literalData, err := ioutil.ReadAll(md.UnverifiedBody)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		t.Logf("Reading, got literal data:")
+		t.Logf("%s", literalData)
+
+		if string(literalData) != signedInput {
+			t.Logf("Expected data was:")
+			t.Logf("%s", signedInput)
+
+			t.Fatal("Got bad md.UnverifiedBody")
+		}
+
+		if !md.IsSigned {
+			t.Fatal("Expecting md to be signed")
+		}
+
+		if md.SignedBy.PublicKey.KeyId != kring[0].PrimaryKey.KeyId {
+			t.Fatal("Unexpected SignedBy KeyId")
 		}
 	}
 }
