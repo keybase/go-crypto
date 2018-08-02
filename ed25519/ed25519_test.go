@@ -91,7 +91,7 @@ func TestCryptoSigner(t *testing.T) {
 
 func TestGolden(t *testing.T) {
 	// sign.input.gz is a selection of test cases from
-	// http://ed25519.cr.yp.to/python/sign.input
+	// https://ed25519.cr.yp.to/python/sign.input
 	testDataZ, err := os.Open("testdata/sign.input.gz")
 	if err != nil {
 		t.Fatal(err)
@@ -138,6 +138,19 @@ func TestGolden(t *testing.T) {
 
 		if !Verify(pubKey, msg, sig2) {
 			t.Errorf("signature failed to verify on line %d", lineNo)
+		}
+
+		priv2 := NewKeyFromSeed(priv[:32])
+		if !bytes.Equal(priv[:], priv2) {
+			t.Errorf("recreating key pair gave different private key on line %d: %x vs %x", lineNo, priv[:], priv2)
+		}
+
+		if pubKey2 := priv2.Public().(PublicKey); !bytes.Equal(pubKey, pubKey2) {
+			t.Errorf("recreating key pair gave different public key on line %d: %x vs %x", lineNo, pubKey, pubKey2)
+		}
+
+		if seed := priv2.Seed(); !bytes.Equal(priv[:32], seed) {
+			t.Errorf("recreating key pair gave different seed on line %d: %x vs %x", lineNo, priv[:32], seed)
 		}
 	}
 
