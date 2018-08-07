@@ -16,8 +16,19 @@ func copyReverse(dst []byte, src []byte) {
 	// Curve 25519 multiplication functions expect scalars in reverse
 	// order than PGP. To keep the curve25519Curve type consistent
 	// with other curves, we reverse it here.
-	for i, j := 0, len(src)-1; j >= 0; i, j = i+1, j-1 {
+	for i, j := 0, len(src)-1; j >= 0 && i < len(dst); i, j = i+1, j-1 {
 		dst[i] = src[j]
+	}
+}
+
+func copyTruncate(dst []byte, src []byte) {
+	lenDst, lenSrc := len(dst), len(src)
+	if lenDst == lenSrc {
+		copy(dst, src)
+	} else if lenDst > lenSrc {
+		copy(dst[lenDst-lenSrc:lenDst], src)
+	} else if lenDst < lenSrc {
+		copy(dst, src[:lenDst])
 	}
 }
 
@@ -27,8 +38,8 @@ func (cv25519Curve) ScalarMult(x1, y1 *big.Int, scalar []byte) (x, y *big.Int) {
 	var x1Bytes [32]byte
 	var scalarBytes [32]byte
 
-	copy(x1Bytes[:], x1.Bytes()[:32])
-	copyReverse(scalarBytes[:], scalar[:32])
+	copyTruncate(x1Bytes[:], x1.Bytes())
+	copyReverse(scalarBytes[:], scalar)
 
 	scalarMult(&dst, &scalarBytes, &x1Bytes)
 
