@@ -74,7 +74,7 @@ func (cv25519Curve) MarshalType40(x, y *big.Int) []byte {
 	ret[0] = 0x40
 
 	xBytes := x.Bytes()
-	copy(ret[1+byteLen-len(xBytes):], xBytes)
+	copyTruncate(ret[1:], xBytes)
 	return ret
 }
 
