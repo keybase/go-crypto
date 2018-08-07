@@ -3,8 +3,8 @@ package openpgp
 import (
 	"bytes"
 	"crypto"
-	"crypto/elliptic"
 	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"io"
 	"io/ioutil"
@@ -14,8 +14,8 @@ import (
 
 	"github.com/keybase/go-crypto/brainpool"
 	"github.com/keybase/go-crypto/curve25519"
-	"github.com/keybase/go-crypto/openpgp/ecdh"
 	"github.com/keybase/go-crypto/openpgp/armor"
+	"github.com/keybase/go-crypto/openpgp/ecdh"
 	"github.com/keybase/go-crypto/openpgp/packet"
 )
 
@@ -367,8 +367,8 @@ func eccKeyGenRoundtrip(t *testing.T, curve elliptic.Curve) {
 }
 
 func TestECCKeyGeneration(t *testing.T) {
-	for _, curve := range []elliptic.Curve {
-		curve25519.Cv25519(), 
+	for _, curve := range []elliptic.Curve{
+		curve25519.Cv25519(),
 		elliptic.P521(), elliptic.P384(), elliptic.P256(),
 		brainpool.P256r1(), brainpool.P384r1(), brainpool.P512r1(),
 	} {
