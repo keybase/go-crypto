@@ -771,10 +771,16 @@ func (e *Entity) SerializePrivate(w io.Writer, config *packet.Config) (err error
 		if err != nil {
 			return
 		}
-		// Workaround shortcoming of SignKey(), which doesn't work to reverse-sign
-		// sub-signing keys. So if requested, just reuse the signatures already
-		// available to us (if we read this key from a keyring).
 		if e.PrivateKey.PrivateKey != nil && !config.ReuseSignatures() {
+			// If not reusing existing signatures, sign subkey using private key
+			// (subkey binding), but also sign primary key using subkey (primary
+			// key binding) if subkey is used for signing.
+			if subkey.Sig.FlagSign {
+				err = subkey.Sig.CrossSignKey(e.PrimaryKey, subkey.PrivateKey, config)
+				if err != nil {
+					return err
+				}
+			}
 			err = subkey.Sig.SignKey(subkey.PublicKey, e.PrivateKey, config)
 			if err != nil {
 				return
