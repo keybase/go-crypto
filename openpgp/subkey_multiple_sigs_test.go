@@ -4,8 +4,10 @@ import (
 	"encoding/hex"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/keybase/go-crypto/openpgp/armor"
+	"github.com/keybase/go-crypto/openpgp/packet"
 )
 
 // Keep key in parts that we concatenate in different ways to get different
@@ -35,7 +37,18 @@ h6YAkkaVK7Y2qx2pubRJShMhiVhnFgDX+8ABfGPWKoTD
 
 `
 
+func ConfigWithDate(dateStr string) *packet.Config {
+	return &packet.Config{
+		Time: func() time.Time {
+			time1, _ := time.Parse("2006-01-02", dateStr)
+			return time1
+		},
+	}
+}
+
 func TestKeyEncryptSigWins(t *testing.T) {
+	config := ConfigWithDate("2018-09-10")
+
 	// `flagEncryptSig`` is "fresher" than `flagSignSig`` so the key will be
 	// considered encryption key and not signing key.
 	keyStr := keyAndIds + subkey + flagSignSig + flagEncryptSig
@@ -53,7 +66,7 @@ func TestKeyEncryptSigWins(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	md, err := ReadMessage(sig.Body, kring, nil, nil)
+	md, err := ReadMessage(sig.Body, kring, nil, config)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,6 +84,8 @@ func TestKeyEncryptSigWins(t *testing.T) {
 }
 
 func TestKeySignSigWins(t *testing.T) {
+	config := ConfigWithDate("2018-09-10")
+
 	// Do not add last signature this time, should be able to verify the
 	// message.
 	keyStr := keyAndIds + subkey + flagSignSig
@@ -88,7 +103,7 @@ func TestKeySignSigWins(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	md, err := ReadMessage(sig.Body, kring, nil, nil)
+	md, err := ReadMessage(sig.Body, kring, nil, config)
 	if err != nil {
 		t.Fatal(err)
 	}
