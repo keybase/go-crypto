@@ -1,6 +1,7 @@
 package openpgp
 
 import (
+	"bytes"
 	"encoding/hex"
 	"strings"
 	"testing"
@@ -54,13 +55,21 @@ func ConfigWithDate(dateStr string) *packet.Config {
 	}
 }
 
+func readKeyFromHex(hexStr string) (el EntityList, err error) {
+	data, err := hex.DecodeString(hexStr)
+	if err != nil {
+		return el, err
+	}
+	return ReadKeyRing(bytes.NewBuffer(data))
+}
+
 func TestKeyEncryptSigWins(t *testing.T) {
 	config := ConfigWithDate("2018-09-10")
 
 	// `flagEncryptSig`` is "fresher" than `flagSignSig`` so the key will be
 	// considered encryption key and not signing key.
 	keyStr := keyAndIdsPackets + subkeyPacket + signSigPacket + encryptSigPacket
-	kring, err := ReadKeyRing(hex.NewDecoder(strings.NewReader(keyStr)))
+	kring, err := readKeyFromHex(keyStr)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +106,7 @@ func TestKeySignSigWins(t *testing.T) {
 	// Do not add last signature this time, should be able to verify the
 	// message.
 	keyStr := keyAndIdsPackets + subkeyPacket + signSigPacket
-	kring, err := ReadKeyRing(hex.NewDecoder(strings.NewReader(keyStr)))
+	kring, err := readKeyFromHex(keyStr)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -135,7 +144,7 @@ func TestKeyWithUnrelatedCrossSign(t *testing.T) {
 	// but a flags=encrypt binding *with* cross-certification. Key flags and
 	// certification status should not be "merged" from both signatures.
 	keyStr := keyAndIdsPackets + subkeyPacket + signSigNoXSignPacket + encryptXSignPacket
-	kring, err := ReadKeyRing(hex.NewDecoder(strings.NewReader(keyStr)))
+	kring, err := readKeyFromHex(keyStr)
 	if err != nil {
 		t.Fatal(err)
 	}
