@@ -510,7 +510,7 @@ EachPacket:
 					// Only register an identity once we've gotten a valid self-signature.
 					// It's possible therefore for us to throw away `current` in the case
 					// no valid self-signatures were found. That's OK as long as there are
-					// other identies that make sense.
+					// other identities that make sense.
 					//
 					// NOTE! We might later see a revocation for this very same UID, and it
 					// won't be undone. We've preserved this feature from the original
