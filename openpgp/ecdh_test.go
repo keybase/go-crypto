@@ -369,7 +369,7 @@ func eccKeyGenRoundtrip(t *testing.T, curve elliptic.Curve) {
 func TestECCKeyGeneration(t *testing.T) {
 	for _, curve := range []elliptic.Curve{
 		curve25519.Cv25519(),
-		elliptic.P521(), elliptic.P384(), elliptic.P256(),
+		elliptic.P224(), elliptic.P384(), elliptic.P256(), elliptic.P521(),
 		brainpool.P256r1(), brainpool.P384r1(), brainpool.P512r1(),
 	} {
 		eccKeyGenRoundtrip(t, curve)
