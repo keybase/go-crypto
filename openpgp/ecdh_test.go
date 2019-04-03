@@ -277,14 +277,12 @@ func TestECDHBitLengths(t *testing.T) {
 	}
 }
 
-func eccKeyGenRoundtrip(t *testing.T, curve elliptic.Curve) {
-	t.Logf("eccKeyGenRoundtrip(%s)", curve.Params().Name)
+func generateEccKeysForTest(t *testing.T, signCurve, encCurve elliptic.Curve) *Entity {
 	uid := packet.NewUserId("Go-Crypto PGP Test", "Test Only Do Not Use", "alice@example.com")
 
 	// Generate keys and create a new entity
-
 	currentTime := time.Now()
-	signingPriv, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+	signingPriv, err := ecdsa.GenerateKey(signCurve, rand.Reader)
 	if err != nil {
 		t.Fatalf("Failed to generate ecdsa key: %s", err)
 	}
@@ -310,7 +308,7 @@ func eccKeyGenRoundtrip(t *testing.T, curve elliptic.Curve) {
 			IssuerKeyId:  &entity.PrimaryKey.KeyId,
 		},
 	}
-	encryptPriv, err := ecdh.GenerateKey(curve, rand.Reader)
+	encryptPriv, err := ecdh.GenerateKey(encCurve, rand.Reader)
 	if err != nil {
 		t.Fatalf("Failed to generate ecdh key: %s", err)
 	}
@@ -332,13 +330,21 @@ func eccKeyGenRoundtrip(t *testing.T, curve elliptic.Curve) {
 	subkey.PrivateKey.IsSubkey = true
 	subkey.PublicKey.IsSubkey = true
 	entity.Subkeys = append(entity.Subkeys, subkey)
+	return entity
+}
+
+func eccKeyGenRoundtrip(t *testing.T, curve elliptic.Curve) {
+	t.Logf("eccKeyGenRoundtrip(%s)", curve.Params().Name)
+
+	// Generate keys and create a new entity
+	entity := generateEccKeysForTest(t, elliptic.P521(), curve)
 
 	// Serialize private bundle and serialize public bundle
 	var privateArmor string
 	{
 		var buf bytes.Buffer
 		writer, _ := armor.Encode(&buf, "PGP PRIVATE KEY BLOCK", nil)
-		err = entity.SerializePrivate(writer, nil)
+		err := entity.SerializePrivate(writer, nil)
 		if err != nil {
 			t.Fatalf("Failed to serialize private key: %s", err)
 		}
@@ -352,7 +358,7 @@ func eccKeyGenRoundtrip(t *testing.T, curve elliptic.Curve) {
 	{
 		var buf bytes.Buffer
 		writer, _ := armor.Encode(&buf, "PGP PUBLIC KEY BLOCK", nil)
-		err = entity.Serialize(writer)
+		err := entity.Serialize(writer)
 		if err != nil {
 			t.Fatalf("Failed to serialize public key: %s", err)
 		}

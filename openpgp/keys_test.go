@@ -3,6 +3,7 @@ package openpgp
 import (
 	"bytes"
 	"crypto"
+	"crypto/elliptic"
 	"errors"
 	"io"
 	"strings"
@@ -644,5 +645,67 @@ func TestKeyWithRevokedSubKey(t *testing.T) {
 	subKey := keys[0].Subkeys[0]
 	if subKey.Sig == nil {
 		t.Fatalf("subkey signature is nil")
+	}
+}
+
+// Try decryption when private key is stubbed. Caveat is that when a key is
+// stubbed, privateKey will be non-nil, but privateKey.PrivateKey will be nil.
+// Consumers will often overlook this fact, so make sure exposed API fails
+// gracefully.
+func TestStubbedPrivateKeyDecryption(t *testing.T) {
+	makeECDH := func() *Entity {
+		t.Logf("Making ECDH key")
+		return generateEccKeysForTest(t, elliptic.P521(), elliptic.P521())
+	}
+	makeRSA := func() *Entity {
+		t.Logf("Making RSA key")
+		cfg := &packet.Config{RSABits: 768}
+		entity, err := NewEntity("Go-Crypto PGP Test", "Test Only Do Not Use", "alice@example.com", cfg)
+		if err != nil {
+			t.Fatalf("makeRSA failed with %s", err)
+		}
+		return entity
+	}
+
+	funcs := []func() *Entity{makeECDH, makeRSA}
+	for _, f := range funcs {
+		entity := f()
+
+		buf := new(bytes.Buffer)
+		armored, err := armor.Encode(buf, "PGP MESSAGE", nil)
+		writer, err := Encrypt(armored, []*Entity{entity}, nil, nil, nil)
+		if err != nil {
+			t.Fatalf("Failed to Encrypt: %s", err)
+		}
+		msgstr := "Hello Test Encryption TestStubbedPrivateKeyOperations."
+		io.Copy(writer, bytes.NewBufferString(msgstr))
+		if err := writer.Close(); err != nil {
+			t.Fatalf("Failed to writer.Close: %s", err)
+		}
+		if err := armored.Close(); err != nil {
+			t.Fatalf("Failed to armored.Close: %s", err)
+		}
+
+		// Stub the subkey
+		entity.Subkeys[0].PrivateKey.PrivateKey = nil
+
+		var entities EntityList
+		entities = append(entities, entity)
+
+		decKeys := entities.DecryptionKeys()
+		if len(decKeys) != 0 {
+			t.Fatalf("Expecting DecryptionKeys() to return empty list")
+		}
+
+		block, err := armor.Decode(bytes.NewBuffer(buf.Bytes()))
+		_, err = ReadMessage(block.Body, entities, nil, nil)
+		t.Logf("ReadMessage returned: %s", err)
+		if err == nil {
+			t.Fatalf("Expected a failure in ReadMessage")
+		}
+
+		if err != pgpErrors.ErrKeyIncorrect {
+			t.Fatalf("Expecting an error to be ErrKeyIncorrect")
+		}
 	}
 }
