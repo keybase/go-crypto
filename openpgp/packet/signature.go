@@ -717,6 +717,14 @@ func (sig *Signature) SignKeyWithSigner(signeePubKey *PublicKey, signerPubKey *P
 	return sig.Sign(s, nil, config)
 }
 
+func (sig *Signature) SignRevocationKey(pub *PublicKey, priv *PrivateKey, config *Config) error {
+	h, err := keyRevocationHash(pub, sig.Hash)
+	if err != nil {
+		return err
+	}
+	return sig.Sign(h, priv, config)
+}
+
 // CrossSignKey creates PrimaryKeyBinding signature in sig.EmbeddedSignature by
 // signing `primary` key's hash using `priv` subkey private key. Primary public
 // key is the `signee` here.
