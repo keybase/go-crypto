@@ -10,7 +10,6 @@ import (
 	"crypto/dsa"
 	"crypto/ecdsa"
 	"encoding/binary"
-	"fmt"
 	"hash"
 	"io"
 	"strconv"
@@ -615,7 +614,6 @@ func (sig *Signature) Sign(h hash.Hash, priv *PrivateKey, config *Config) (err e
 		err = errors.InvalidArgumentError("attempting to sign with nil PrivateKey")
 		return
 	}
-
 	sig.outSubpackets = sig.buildSubpackets()
 	digest, err := sig.signPrepareHash(h)
 	if err != nil {
@@ -729,9 +727,10 @@ func (sig *Signature) SignRevocationKey(pub *PublicKey, priv *PrivateKey, config
 // signing `primary` key's hash using `priv` subkey private key. Primary public
 // key is the `signee` here.
 func (sig *Signature) CrossSignKey(primary *PublicKey, priv *PrivateKey, config *Config) error {
-	if len(sig.outSubpackets) > 0 {
-		return fmt.Errorf("outSubpackets already exists, looks like CrossSignKey was called after Sign")
-	}
+	// if len(sig.outSubpackets) > 0 {
+	// 	return fmt.Errorf("outSubpackets already exists, looks like CrossSignKey was called after Sign")
+	// }
+	sig.outSubpackets = []outputSubpacket{}
 
 	sig.EmbeddedSignature = &Signature{
 		CreationTime: sig.CreationTime,
@@ -750,6 +749,10 @@ func (sig *Signature) CrossSignKey(primary *PublicKey, priv *PrivateKey, config 
 // Serialize marshals sig to w. Sign, SignUserId or SignKey must have been
 // called first.
 func (sig *Signature) Serialize(w io.Writer) (err error) {
+	err, _ = sig.Serialize2(w)
+	return err
+}
+func (sig *Signature) Serialize2(w io.Writer) (err error, headLen int) {
 	if len(sig.outSubpackets) == 0 {
 		sig.outSubpackets = sig.rawSubpackets
 	}
@@ -757,7 +760,7 @@ func (sig *Signature) Serialize(w io.Writer) (err error) {
 		sig.DSASigR.bytes == nil &&
 		sig.ECDSASigR.bytes == nil &&
 		sig.EdDSASigR.bytes == nil {
-		return errors.InvalidArgumentError("Signature: need to call Sign, SignUserId or SignKey before Serialize")
+		return errors.InvalidArgumentError("Signature: need to call Sign, SignUserId or SignKey before Serialize"), 0
 	}
 
 	sigLength := 0
@@ -781,7 +784,7 @@ func (sig *Signature) Serialize(w io.Writer) (err error) {
 	length := len(sig.HashSuffix) - 6 /* trailer not included */ +
 		2 /* length of unhashed subpackets */ + unhashedSubpacketsLen +
 		2 /* hash tag */ + sigLength
-	err = serializeHeader(w, packetTypeSignature, length)
+	err, headLen = serializeHeader2(w, packetTypeSignature, length)
 	if err != nil {
 		return
 	}
@@ -877,8 +880,8 @@ func (sig *Signature) buildSubpackets() (subpackets []outputSubpacket) {
 
 	if sig.EmbeddedSignature != nil {
 		buf := bytes.NewBuffer(nil)
-		if err := sig.EmbeddedSignature.Serialize(buf); err == nil {
-			byteContent := buf.Bytes()[2:] // skip 2-byte length header
+		if err, headLen := sig.EmbeddedSignature.Serialize2(buf); err == nil {
+			byteContent := buf.Bytes()[headLen:] // skip 2-byte length header, sig length header
 			subpackets = append(subpackets, outputSubpacket{false, embeddedSignatureSubpacket, true, byteContent})
 		}
 	}
