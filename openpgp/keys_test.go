@@ -540,6 +540,29 @@ func TestRevokedUserID(t *testing.T) {
 	}
 }
 
+func TestRevokedUserID2(t *testing.T) {
+	// This key contains 2 UIDs, one of which is revoked:
+	// [ revoked] (1)  Alden Peeters <alden@openfortress.xyz>
+	// [ultimate] (2)  Alden Peeters <alden.peeters@leagueh.xyz>
+	keys, err := ReadArmoredKeyRing(bytes.NewBufferString(revokedUserIDKey2))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(keys) != 1 {
+		t.Fatal("Failed to read key with a revoked user id")
+	}
+	var identities []*Identity
+	for _, identity := range keys[0].Identities {
+		identities = append(identities, identity)
+	}
+	if numIdentities, numExpected := len(identities), 1; numIdentities != numExpected {
+		t.Errorf("obtained %d identities, expected %d", numIdentities, numExpected)
+	}
+	if identityName, expectedName := identities[0].Name, "Alden Peeters <alden.peeters@leagueh.xyz>"; !strings.Contains(identityName, expectedName) {
+		t.Errorf("obtained identity %s expected %s", identityName, expectedName)
+	}
+}
+
 func TestNewEntityCorrectName(t *testing.T) {
 	entity, err := NewEntity("Golang Gopher", "Test Key", "no-reply@golang.com", nil)
 	if err != nil {
