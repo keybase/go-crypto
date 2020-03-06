@@ -27,6 +27,10 @@ const (
 	KeyFlagSign
 	KeyFlagEncryptCommunications
 	KeyFlagEncryptStorage
+	KeyFlagSplitKey
+	KeyFlagAuthenticate
+	_
+	KeyFlagGroupKey
 )
 
 // Signer can be implemented by application code to do actual signing.
@@ -85,8 +89,8 @@ type Signature struct {
 
 	// FlagsValid is set if any flags were given. See RFC 4880, section
 	// 5.2.3.21 for details.
-	FlagsValid                                                           bool
-	FlagCertify, FlagSign, FlagEncryptCommunications, FlagEncryptStorage bool
+	FlagsValid                                                                                                         bool
+	FlagCertify, FlagSign, FlagEncryptCommunications, FlagEncryptStorage, FlagSplitKey, FlagAuthenticate, FlagGroupKey bool
 
 	// RevocationReason is set if this signature has been revoked.
 	// See RFC 4880, section 5.2.3.23 for details.
@@ -399,6 +403,15 @@ func parseSignatureSubpacket(sig *Signature, subpacket []byte, isHashed bool) (r
 			if subpacket[0]&KeyFlagEncryptStorage != 0 {
 				sig.FlagEncryptStorage = true
 			}
+		}
+		if subpacket[0]&KeyFlagSplitKey != 0 {
+			sig.FlagSplitKey = true
+		}
+		if subpacket[0]&KeyFlagAuthenticate != 0 {
+			sig.FlagAuthenticate = true
+		}
+		if subpacket[0]&KeyFlagGroupKey != 0 {
+			sig.FlagGroupKey = true
 		}
 	case reasonForRevocationSubpacket:
 		// Reason For Revocation, section 5.2.3.23
@@ -896,6 +909,16 @@ func (sig *Signature) GetKeyFlags() (ret KeyFlagBits) {
 	if sig.FlagEncryptStorage {
 		ret.BitField |= KeyFlagEncryptStorage
 	}
+	if sig.FlagSplitKey {
+		ret.BitField |= KeyFlagSplitKey
+	}
+	if sig.FlagAuthenticate {
+		ret.BitField |= KeyFlagAuthenticate
+	}
+	if sig.FlagGroupKey {
+		ret.BitField |= KeyFlagGroupKey
+	}
+
 	return ret
 }
 
