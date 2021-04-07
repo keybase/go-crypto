@@ -89,7 +89,7 @@ func TestSignWithSigner(t *testing.T) {
 		t.Error(err)
 	}
 
-	signerSubkey, ok := kring[0].signingKey(time.Now())
+	signerSubkey, ok := kring[0].signingKey(time.Now(), 0)
 	if !ok {
 		t.Error("couldn't get signer subkey")
 	}
@@ -133,7 +133,7 @@ func TestSignerCanReturnErrors(t *testing.T) {
 		t.Error(err)
 	}
 
-	signerSubkey, ok := kring[0].signingKey(time.Now())
+	signerSubkey, ok := kring[0].signingKey(time.Now(), 0)
 	if !ok {
 		t.Error("couldn't get signer subkey")
 	}
@@ -333,7 +333,7 @@ func TestEncryption(t *testing.T) {
 
 		testTime, _ := time.Parse("2006-01-02", "2013-07-01")
 		if test.isSigned {
-			signKey, _ := kring[0].signingKey(testTime)
+			signKey, _ := kring[0].signingKey(testTime, 0)
 			expectedKeyId := signKey.PublicKey.KeyId
 			if md.SignedByKeyId != expectedKeyId {
 				t.Errorf("#%d: message signed by wrong key id, got: %d, want: %d", i, md.SignedByKeyId, expectedKeyId)
