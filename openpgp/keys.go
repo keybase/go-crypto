@@ -170,7 +170,12 @@ func (e *Entity) encryptionKey(now time.Time) (Key, bool) {
 
 // signingKey return the best candidate Key for signing a message with this
 // Entity.
-func (e *Entity) signingKey(now time.Time) (Key, bool) {
+func (e *Entity) signingKey(now time.Time, id uint64) (Key, bool) {
+	i := e.primaryIdentity()
+	// If the id specified is the Entity.PrivateKey.KeyID lets skip looking at the subkeys
+	if e.PrivateKey != nil && e.PrivateKey.KeyId == id {
+		return Key{e, e.PrimaryKey, e.PrivateKey, i.SelfSignature, i.SelfSignature.GetKeyFlags()}, true
+	}
 	candidateSubkey := -1
 
 	// Iterate the keys to find the newest, non-revoked key that can
@@ -182,7 +187,8 @@ func (e *Entity) signingKey(now time.Time) (Key, bool) {
 			subkey.PublicKey.PubKeyAlgo.CanSign() &&
 			!subkey.Sig.KeyExpired(now) &&
 			subkey.Revocation == nil &&
-			(maxTime.IsZero() || subkey.Sig.CreationTime.After(maxTime)) {
+			(maxTime.IsZero() || subkey.Sig.CreationTime.After(maxTime)) &&
+			(id == 0 || subkey.PrivateKey.KeyId == id) {
 			candidateSubkey = i
 			maxTime = subkey.Sig.CreationTime
 			break
@@ -196,7 +202,6 @@ func (e *Entity) signingKey(now time.Time) (Key, bool) {
 
 	// If we have no candidate subkey then we assume that it's ok to sign
 	// with the primary key.
-	i := e.primaryIdentity()
 	if (!i.SelfSignature.FlagsValid || i.SelfSignature.FlagSign) &&
 		e.PrimaryKey.PubKeyAlgo.CanSign() &&
 		!i.SelfSignature.KeyExpired(now) &&

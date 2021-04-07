@@ -92,7 +92,7 @@ func SignWithSigner(s packet.Signer, w io.Writer, message io.Reader, sigType pac
 }
 
 func detachSign(w io.Writer, signer *Entity, message io.Reader, sigType packet.SignatureType, config *packet.Config) (err error) {
-	signerSubkey, ok := signer.signingKey(config.Now())
+	signerSubkey, ok := signer.signingKey(config.Now(), config.SigningKey())
 	if !ok {
 		err = errors.InvalidArgumentError("no valid signing keys")
 		return
@@ -209,7 +209,7 @@ func hashToHashId(h crypto.Hash) uint8 {
 func Encrypt(ciphertext io.Writer, to []*Entity, signed *Entity, hints *FileHints, config *packet.Config) (plaintext io.WriteCloser, err error) {
 	var signer *packet.PrivateKey
 	if signed != nil {
-		signKey, ok := signed.signingKey(config.Now())
+		signKey, ok := signed.signingKey(config.Now(), config.SigningKey())
 		if !ok {
 			return nil, errors.InvalidArgumentError("no valid signing keys")
 		}
@@ -443,7 +443,7 @@ func AttachedSign(out io.WriteCloser, signed Entity, hints *FileHints,
 
 	var signer *packet.PrivateKey
 
-	signKey, ok := signed.signingKey(config.Now())
+	signKey, ok := signed.signingKey(config.Now(), config.SigningKey())
 	if !ok {
 		err = errors.InvalidArgumentError("no valid signing keys")
 		return

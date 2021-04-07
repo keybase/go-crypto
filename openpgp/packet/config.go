@@ -49,6 +49,8 @@ type Config struct {
 	// ReuseSignatures tells us to reuse existing Signatures
 	// on serialized output.
 	ReuseSignaturesOnSerialize bool
+	// SigningKeyId specify signing key id to use, if not set defaults to best guess on subkeys.
+	SigningKeyId uint64
 }
 
 func (c *Config) Random() io.Reader {
@@ -95,4 +97,11 @@ func (c *Config) PasswordHashIterations() int {
 
 func (c *Config) ReuseSignatures() bool {
 	return c != nil && c.ReuseSignaturesOnSerialize
+}
+
+func (c *Config) SigningKey() uint64 {
+	if c == nil {
+		return 0
+	}
+	return c.SigningKeyId
 }
