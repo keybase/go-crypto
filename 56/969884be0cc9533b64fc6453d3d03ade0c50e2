@@ -1,0 +1,42 @@
+openpgp/elgamal/elgamal.go
+  h_f21e4bfbe3ac62 74-75,80,85-87
+openpgp/elgamal/elgamal_test.go
+  s_2e83e99a71a83d::t_605feef39950e4 110,112-126,129
+  h_f21e4bfbe3ac62 87-109,127-128
+  s_2e83e99a71a83d::t_d4e71af4c7eb73 111
+  s_61e8ef707c52d8::t_36f64dd2d3c6b1 51-76
+openpgp/packet/ecdh.go
+  s_61e8ef707c52d8::t_e7440e9f39daf6 40-42,48
+  h_f21e4bfbe3ac62 46-47
+openpgp/packet/ecdh_test.go
+  s_61e8ef707c52d8::t_3a41c3bc2b7d50 1-45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "56969884be0cc9533b64fc6453d3d03ade0c50e2",
+  "prompts": {},
+  "humans": {
+    "h_f21e4bfbe3ac62": {
+      "author": "Michał Zochniak <michal.zochniak@zoom.us>"
+    }
+  },
+  "sessions": {
+    "s_2e83e99a71a83d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "361a85c8-b12e-4b5c-a0cd-be02d9069669",
+        "model": "grok-4.7"
+      },
+      "human_author": "Michał Zochniak <michal.zochniak@zoom.us>"
+    },
+    "s_61e8ef707c52d8": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "28cc417c-b001-4d5f-8828-0998f50597b1",
+        "model": "grok-4.7"
+      },
+      "human_author": "Michał Zochniak <michal.zochniak@zoom.us>"
+    }
+  }
+}
