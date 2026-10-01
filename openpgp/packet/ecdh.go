@@ -37,9 +37,15 @@ func decryptKeyECDH(priv *PrivateKey, X, Y *big.Int, C []byte) (out []byte, err 
 	if !ok {
 		return nil, errors.InvalidArgumentError("invalid hash id in private key")
 	}
+	if !hash.Available() {
+		return nil, errors.InvalidArgumentError("unavailable hash in private key")
+	}
 
 	key := ecdhpriv.KDF(Sx, kdfParams, hash)
 	keySize := CipherFunction(priv.ecdh.KdfAlgo).KeySize()
+	if len(key) < keySize {
+		return nil, errors.InvalidArgumentError("invalid KDF output while ECDH")
+	}
 
 	decrypted, err := ecdh.AESKeyUnwrap(key[:keySize], C)
 	if err != nil {

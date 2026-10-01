@@ -114,6 +114,9 @@ func (e *EncryptedKey) Decrypt(priv *PrivateKey, config *Config) error {
 	if err != nil {
 		return err
 	}
+	if len(b) < 3 {
+		return errors.StructuralError("truncated session key")
+	}
 
 	e.CipherFunc = CipherFunction(b[0])
 	e.Key = b[1 : len(b)-2]
