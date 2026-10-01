@@ -1,0 +1,27 @@
+openpgp/clearsign/clearsign_test.go
+  s_46af65904c21f6::t_c294fd1f45b9a1 48,65-67
+  s_46af65904c21f6::t_c087b11d62cb4a 49-64
+openpgp/clearsign/clearsign.go
+  h_f21e4bfbe3ac62 118-120
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "6e1f9ba08487072a149fa6108911f5c906d82077",
+  "prompts": {},
+  "humans": {
+    "h_f21e4bfbe3ac62": {
+      "author": "Michał Zochniak <michal.zochniak@zoom.us>"
+    }
+  },
+  "sessions": {
+    "s_46af65904c21f6": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "869430c5-5a22-45ad-9098-7c54c8a83511",
+        "model": "grok-4.7"
+      },
+      "human_author": "Michał Zochniak <michal.zochniak@zoom.us>"
+    }
+  }
+}
