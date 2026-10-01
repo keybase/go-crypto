@@ -84,7 +84,48 @@ func TestDecryptBadKey(t *testing.T) {
 	}
 	priv.Y = new(big.Int).Exp(priv.G, priv.X, priv.P)
 	c1, c2 := fromHex("8"), fromHex("8")
-	if _, err := Decrypt(priv, c1, c2); err == nil {
-		t.Errorf("unexpected success decrypting")
+	_, err := Decrypt(priv, c1, c2)
+	if err == nil || err.Error() != "elgamal: decryption error" {
+		t.Fatalf("c1=%s: Decrypt: got %v", c1, err)
+	}
+}
+
+func TestDecryptNonInvertibleCiphertext(t *testing.T) {
+	priv := &PrivateKey{
+		PublicKey: PublicKey{
+			G: fromHex(generatorHex),
+			P: fromHex(primeHex),
+		},
+		X: fromHex("42"),
+	}
+	priv.Y = new(big.Int).Exp(priv.G, priv.X, priv.P)
+
+	// c1 = 0 and c1 = P are 0 mod P, so c1^X mod P is 0 and has no inverse.
+	// The prime and exponent are valid; the ciphertext is not.
+	for _, c1 := range []*big.Int{big.NewInt(0), priv.P} {
+		_, err := Decrypt(priv, c1, priv.G)
+		if err == nil || err.Error() != "elgamal: decryption error" {
+			t.Fatalf("c1=%s: Decrypt: got %v", c1, err)
+		}
+	}
+}
+
+func TestDecryptZeroPlaintext(t *testing.T) {
+	priv := &PrivateKey{
+		PublicKey: PublicKey{
+			G: fromHex(generatorHex),
+			P: fromHex(primeHex),
+		},
+		X: fromHex("42"),
+	}
+	priv.Y = new(big.Int).Exp(priv.G, priv.X, priv.P)
+
+	// c1 = G is coprime to P, so the inverse exists. c2 = 0 and c2 = P both
+	// reduce to 0, and the recovered block is empty.
+	for _, c2 := range []*big.Int{big.NewInt(0), priv.P} {
+		_, err := Decrypt(priv, priv.G, c2)
+		if err == nil || err.Error() != "elgamal: decryption error" {
+			t.Fatalf("c2=%s: Decrypt: got %v", c2, err)
+		}
 	}
 }
