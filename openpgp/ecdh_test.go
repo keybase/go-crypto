@@ -739,3 +739,46 @@ func TestReadMessageZeroECDHUnwrap(t *testing.T) {
 		t.Fatalf("ReadMessage: got %v, want ErrKeyIncorrect", err)
 	}
 }
+
+func TestEncryptRejectsShortKDFHash(t *testing.T) {
+	// Both digests are shorter than an AES-256 key.
+	const want = "ecdh: KDF hash output is shorter than the cipher key size"
+	for _, tc := range []struct {
+		name string
+		hash byte
+	}{
+		{name: "sha224 shorter than aes256", hash: 11}, // SHA224, 28 bytes
+		{name: "sha1 shorter than aes256", hash: 2},    // SHA1, 20 bytes
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			entity := generateEccKeysForTest(t, elliptic.P256(), elliptic.P256())
+			var raw bytes.Buffer
+			if err := entity.Subkeys[0].PublicKey.Serialize(&raw); err != nil {
+				t.Fatalf("serialize: %s", err)
+			}
+			packetBytes := raw.Bytes()
+			// NewECDHPublicKey ends the packet with KDF params
+			// 03 01 <hash> <cipher>: SHA-512 (10) and AES-256 (9).
+			trailer := packetBytes[len(packetBytes)-4:]
+			if !bytes.Equal(trailer, []byte{0x03, 0x01, 0x0a, 0x09}) {
+				t.Fatalf("kdf trailer: got %x", trailer)
+			}
+			packetBytes[len(packetBytes)-2] = tc.hash
+
+			p, err := packet.Read(bytes.NewReader(packetBytes))
+			if err != nil {
+				t.Fatalf("parse: %s", err)
+			}
+			pub, ok := p.(*packet.PublicKey)
+			if !ok {
+				t.Fatalf("parsed %T", p)
+			}
+			entity.Subkeys[0].PublicKey = pub
+
+			_, err = Encrypt(new(bytes.Buffer), []*Entity{entity}, nil, nil, nil)
+			if err == nil || err.Error() != want {
+				t.Fatalf("Encrypt: got %v, want %s", err, want)
+			}
+		})
+	}
+}

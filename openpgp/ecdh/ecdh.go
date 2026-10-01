@@ -218,6 +218,9 @@ func (e *PublicKey) Encrypt(random io.Reader, kdfParams []byte, plain []byte, ha
 
 	plain = PadBuffer(plain, 8)
 	key := e.KDF(Sx.Bytes(), kdfParams, hash)
+	if len(key) < kdfKeySize {
+		return nil, nil, nil, errors.New("ecdh: KDF hash output is shorter than the cipher key size")
+	}
 
 	// Take only as many bytes from key as the key length (the hash
 	// result might be bigger)
