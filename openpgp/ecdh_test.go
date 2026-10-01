@@ -700,3 +700,42 @@ func TestReadMessageShortECDHKey(t *testing.T) {
 		t.Fatalf("ReadMessage: got %v, want ErrKeyIncorrect", err)
 	}
 }
+
+func TestReadMessageZeroECDHUnwrap(t *testing.T) {
+	priv, err := ecdh.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("generate: %s", err)
+	}
+	pk := packet.NewECDHPrivateKey(time.Now(), priv)
+	pub := pk.PublicKey.PublicKey.(*ecdh.PublicKey)
+	// A wrapped-key length of 0 is rejected before AESKeyUnwrap reads a block.
+	// ReadMessage discards that error and reports that no key worked.
+	mpi, bitLen := ecdh.Marshal(pub.Curve, pub.X, pub.Y)
+
+	body := new(bytes.Buffer)
+	body.WriteByte(3)
+	var keyID [8]byte
+	binary.BigEndian.PutUint64(keyID[:], pk.KeyId)
+	body.Write(keyID[:])
+	body.WriteByte(byte(packet.PubKeyAlgoECDH))
+	body.Write([]byte{byte(bitLen >> 8), byte(bitLen)})
+	body.Write(mpi)
+	body.WriteByte(0)
+
+	msg := new(bytes.Buffer)
+	// Tag 1, public-key encrypted session key.
+	msg.WriteByte(0xC1)
+	msg.WriteByte(byte(body.Len()))
+	msg.Write(body.Bytes())
+	// Tag 9, empty symmetrically encrypted data. ReadMessage decrypts the
+	// session key before reading this body.
+	msg.Write([]byte{0xC9, 0x00})
+
+	_, err = ReadMessage(bytes.NewReader(msg.Bytes()), EntityList{{
+		PrimaryKey: &pk.PublicKey,
+		PrivateKey: pk,
+	}}, nil, nil)
+	if err != errors.ErrKeyIncorrect {
+		t.Fatalf("ReadMessage: got %v, want ErrKeyIncorrect", err)
+	}
+}

@@ -206,6 +206,26 @@ func TestDecryptingEmptyECDHUnwrap(t *testing.T) {
 	}
 }
 
+func TestDecryptingZeroECDHUnwrap(t *testing.T) {
+	priv, err := ecdh.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("generate: %s", err)
+	}
+	pk := NewECDHPrivateKey(time.Now(), priv)
+	pub := pk.PublicKey.PublicKey.(*ecdh.PublicKey)
+	// A wrapped-key length of 0 is rejected before the first AES block is read.
+	mpi, _ := ecdh.Marshal(pub.Curve, pub.X, pub.Y)
+	ek := &EncryptedKey{
+		Algo:          PubKeyAlgoECDH,
+		encryptedMPI1: parsedMPI{bytes: mpi},
+		ecdh_C:        []byte{},
+	}
+	err = ek.Decrypt(pk, nil)
+	if err == nil || err.Error() != "cipherText must not be zero length" {
+		t.Fatalf("Decrypt: got %v, want cipherText must not be zero length", err)
+	}
+}
+
 func TestDecryptingShortRSAKey(t *testing.T) {
 	for _, n := range []int{0, 1, 2} {
 		ct, err := rsa.EncryptPKCS1v15(rand.Reader, &encryptedKeyPub, make([]byte, n))

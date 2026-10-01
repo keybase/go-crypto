@@ -51,8 +51,11 @@ func (e *PublicKey) KDF(S []byte, kdfParams []byte, hash crypto.Hash) []byte {
 // Note: The second described algorithm ("index-based") is implemented
 // here.
 func AESKeyUnwrap(key, cipherText []byte) ([]byte, error) {
+	if len(cipherText) == 0 {
+		return nil, errors.New("cipherText must not be zero length")
+	}
 	if len(cipherText)%8 != 0 {
-		return nil, errors.New("cipherText must by a multiple of 64 bits")
+		return nil, errors.New("cipherText must be a multiple of 64 bits")
 	}
 
 	cipher, err := aes.NewCipher(key)
