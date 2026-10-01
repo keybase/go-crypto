@@ -1,0 +1,19 @@
+openpgp/elgamal/elgamal_test.go
+  s_61e8ef707c52d8::t_36f64dd2d3c6b1 51-76
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "31f348a0bf7e4842537bf4eab40c43270d531af2",
+  "prompts": {},
+  "sessions": {
+    "s_61e8ef707c52d8": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "28cc417c-b001-4d5f-8828-0998f50597b1",
+        "model": "grok-4.7"
+      },
+      "human_author": "Michał Zochniak <michal.zochniak@zoom.us>"
+    }
+  }
+}
