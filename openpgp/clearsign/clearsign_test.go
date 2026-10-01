@@ -45,6 +45,26 @@ func TestParse(t *testing.T) {
 	testParse(t, clearsignInput2, "\r\n\r\n(This message has a couple of blank lines at the start and end.)\r\n\r\n", "\n\n(This message has a couple of blank lines at the start and end.)\n\n\n")
 }
 
+func TestDecodeMissingSignatureHeader(t *testing.T) {
+	// No -----BEGIN PGP SIGNATURE-----. Each input makes the plaintext loop
+	// see an empty rest by a different route: a partial last line, a
+	// newline-terminated last line, a trailing blank line, no body after
+	// the headers, and the same partial line with CRLF endings.
+	inputs := [][]byte{
+		[]byte("-----BEGIN PGP SIGNED MESSAGE-----\nHash: SHA256\n\nHello"),
+		[]byte("-----BEGIN PGP SIGNED MESSAGE-----\nHash: SHA256\n\nHello\n"),
+		[]byte("-----BEGIN PGP SIGNED MESSAGE-----\nHash: SHA256\n\nHello\n\n"),
+		[]byte("-----BEGIN PGP SIGNED MESSAGE-----\nHash: SHA256\n\n"),
+		[]byte("-----BEGIN PGP SIGNED MESSAGE-----\r\nHash: SHA256\r\n\r\nHello"),
+	}
+	for _, input := range inputs {
+		b, rest := Decode(input)
+		if b != nil || !bytes.Equal(rest, input) {
+			t.Fatalf("input %q: got block=%v rest=%q", input, b, rest)
+		}
+	}
+}
+
 func TestParseWithNoNewlineAtEnd(t *testing.T) {
 	input := clearsignInput
 	input = input[:len(input)-len("trailing")-1]

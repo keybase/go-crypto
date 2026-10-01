@@ -115,6 +115,9 @@ func Decode(data []byte) (b *Block, rest []byte) {
 
 	firstLine := true
 	for {
+		if len(rest) == 0 {
+			break
+		}
 		start := rest
 
 		line, rest = getLine(rest)
