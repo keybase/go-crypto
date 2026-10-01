@@ -7,9 +7,10 @@ import (
 	"crypto/elliptic"
 	"encoding/binary"
 	"errors"
-	"github.com/keybase/go-crypto/curve25519"
 	"io"
 	"math/big"
+
+	"github.com/keybase/go-crypto/curve25519"
 )
 
 type PublicKey struct {
@@ -175,6 +176,10 @@ func PadBuffer(buf []byte, blockLen int) []byte {
 // returns buffer without the padding, or nil if the padding was
 // invalid.
 func UnpadBuffer(buf []byte, dataLen int) []byte {
+	if len(buf) < dataLen {
+		// Buffer not long enough.
+		return nil
+	}
 	padding := len(buf) - dataLen
 	outBuf := buf[:dataLen]
 
@@ -299,7 +304,7 @@ func GenerateKey(curve elliptic.Curve, random io.Reader) (priv *PrivateKey, err 
 		privBytes[0] &= 127
 		privBytes[0] |= 64
 
-		Vx,Vy = curve.ScalarBaseMult(privBytes)
+		Vx, Vy = curve.ScalarBaseMult(privBytes)
 	} else {
 		privBytes, Vx, Vy, err = elliptic.GenerateKey(curve, random)
 		if err != nil {

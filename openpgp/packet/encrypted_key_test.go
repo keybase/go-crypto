@@ -6,11 +6,17 @@ package packet
 
 import (
 	"bytes"
+	"crypto"
+	"crypto/elliptic"
+	"crypto/rand"
 	"encoding/hex"
 	"fmt"
 	"math/big"
 	"testing"
+	"time"
 
+	"github.com/keybase/go-crypto/openpgp/ecdh"
+	"github.com/keybase/go-crypto/openpgp/errors"
 	"github.com/keybase/go-crypto/rsa"
 )
 
@@ -148,5 +154,53 @@ func TestSerializingEncryptedKey(t *testing.T) {
 
 	if bufHex := hex.EncodeToString(buf.Bytes()); bufHex != encryptedKeyHex {
 		t.Fatalf("serialization of encrypted key differed from original. Original was %s, but reserialized as %s", encryptedKeyHex, bufHex)
+	}
+}
+
+func TestDecryptingShortECDHKey(t *testing.T) {
+	priv, err := ecdh.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("generate: %s", err)
+	}
+	pk := NewECDHPrivateKey(time.Now(), priv)
+	pub := pk.PublicKey.PublicKey.(*ecdh.PublicKey)
+
+	// An empty plaintext is padded to eight 0x08 bytes. 0x08 is AES-192, so
+	// the unwrapped buffer is shorter than the cipher key plus checksum.
+	Vx, Vy, C, err := pub.Encrypt(rand.Reader, ECDHKdfParams(&pk.PublicKey), nil, crypto.SHA512, CipherAES256.KeySize())
+	if err != nil {
+		t.Fatalf("encrypt: %s", err)
+	}
+	mpi, _ := ecdh.Marshal(pub.Curve, Vx, Vy)
+	ek := &EncryptedKey{
+		Algo:          PubKeyAlgoECDH,
+		encryptedMPI1: parsedMPI{bytes: mpi},
+		ecdh_C:        C,
+	}
+
+	err = ek.Decrypt(pk, nil)
+	if err != errors.InvalidArgumentError("invalid padding while ECDH") {
+		t.Fatalf("Decrypt: got %v, want invalid padding error", err)
+	}
+}
+
+func TestDecryptingEmptyECDHUnwrap(t *testing.T) {
+	priv, err := ecdh.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("generate: %s", err)
+	}
+	pk := NewECDHPrivateKey(time.Now(), priv)
+	pub := pk.PublicKey.PublicKey.(*ecdh.PublicKey)
+	// The static public point is a valid ephemeral point. Its shared secret
+	// does not matter: an 8-byte 0xA6 unwrap does not use the AES key.
+	mpi, _ := ecdh.Marshal(pub.Curve, pub.X, pub.Y)
+	ek := &EncryptedKey{
+		Algo:          PubKeyAlgoECDH,
+		encryptedMPI1: parsedMPI{bytes: mpi},
+		ecdh_C:        bytes.Repeat([]byte{0xA6}, 8),
+	}
+	err = ek.Decrypt(pk, nil)
+	if err != errors.InvalidArgumentError("invalid unwrap while ECDH") {
+		t.Fatalf("Decrypt: got %v, want invalid unwrap error", err)
 	}
 }

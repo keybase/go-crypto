@@ -45,6 +45,9 @@ func decryptKeyECDH(priv *PrivateKey, X, Y *big.Int, C []byte) (out []byte, err 
 	if err != nil {
 		return nil, err
 	}
+	if len(decrypted) == 0 {
+		return nil, errors.InvalidArgumentError("invalid unwrap while ECDH")
+	}
 
 	// We have to "read ahead" to discover real length of the
 	// encryption key and properly unpad buffer.
