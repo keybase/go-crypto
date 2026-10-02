@@ -1,0 +1,41 @@
+openpgp/packet/encrypted_key_test.go
+  h_f21e4bfbe3ac62 19,208,229-286
+  s_2e83e99a71a83d::t_1977bcf1a1634b 209-215,217-223,226-228
+  s_2e83e99a71a83d::t_8377954db397a6 216,224-225
+openpgp/packet/encrypted_key.go
+  h_f21e4bfbe3ac62 117-118
+  s_61e8ef707c52d8::t_b1737d60bb13fa 119
+openpgp/ecdh/ecdh.go
+  h_f21e4bfbe3ac62 54-56,58
+openpgp/ecdh_test.go
+  s_2e83e99a71a83d::t_de7f0245cf18be 703-741
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "22ec07ffcee1ca04011c02816872c574fc690737",
+  "prompts": {},
+  "humans": {
+    "h_f21e4bfbe3ac62": {
+      "author": "Michał Zochniak <michal.zochniak@zoom.us>"
+    }
+  },
+  "sessions": {
+    "s_2e83e99a71a83d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "361a85c8-b12e-4b5c-a0cd-be02d9069669",
+        "model": "grok-4.7"
+      },
+      "human_author": "Michał Zochniak <michal.zochniak@zoom.us>"
+    },
+    "s_61e8ef707c52d8": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "28cc417c-b001-4d5f-8828-0998f50597b1",
+        "model": "grok-4.7"
+      },
+      "human_author": null
+    }
+  }
+}

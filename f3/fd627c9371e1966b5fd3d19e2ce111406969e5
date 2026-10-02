@@ -1,0 +1,36 @@
+openpgp/keys.go
+  h_f21e4bfbe3ac62 532
+openpgp/packet/signature.go
+  h_f21e4bfbe3ac62 452-454,459-461
+openpgp/packet/signature_test.go
+  h_f21e4bfbe3ac62 11,14,30-48
+openpgp/revoke_test.go
+  s_32cd559306ce25::t_8d761d0f286418 205-211
+  s_32cd559306ce25::t_98548cda8cd8be 190,192-195,198,200-204
+  s_32cd559306ce25::t_8654d7aa13b8fa 277-297,316-317
+  s_32cd559306ce25::t_7e43f0448f8f2a 298-315
+  s_32cd559306ce25::t_f36f692e899f40 191,199
+  h_f21e4bfbe3ac62 196-197
+  s_32cd559306ce25::t_39f09ba386e0c2 318
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "f3fd627c9371e1966b5fd3d19e2ce111406969e5",
+  "prompts": {},
+  "humans": {
+    "h_f21e4bfbe3ac62": {
+      "author": "Michał Zochniak <michal.zochniak@zoom.us>"
+    }
+  },
+  "sessions": {
+    "s_32cd559306ce25": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c8bc084a-ee22-4a52-810b-8636434cbb80",
+        "model": "grok-4.7"
+      },
+      "human_author": "Michał Zochniak <michal.zochniak@zoom.us>"
+    }
+  }
+}
