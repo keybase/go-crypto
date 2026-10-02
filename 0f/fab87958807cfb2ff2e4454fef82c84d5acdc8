@@ -1,0 +1,24 @@
+openpgp/packet/ecdh_test.go
+  s_6ec1d71c628484::t_3e0f854a4cb271 20,25-27,33-34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "0ffab87958807cfb2ff2e4454fef82c84d5acdc8",
+  "prompts": {},
+  "humans": {
+    "h_f21e4bfbe3ac62": {
+      "author": "Michał Zochniak <michal.zochniak@zoom.us>"
+    }
+  },
+  "sessions": {
+    "s_6ec1d71c628484": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "04fc259e-633b-4395-839c-745c03a0da39",
+        "model": "grok-4.7"
+      },
+      "human_author": "Michał Zochniak <michal.zochniak@zoom.us>"
+    }
+  }
+}
