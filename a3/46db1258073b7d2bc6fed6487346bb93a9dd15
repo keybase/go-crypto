@@ -1,0 +1,18 @@
+ocsp/ocsp.go
+  h_f21e4bfbe3ac62 640-642
+openpgp/s2k/s2k.go
+  h_f21e4bfbe3ac62 261-264
+openpgp/write.go
+  h_f21e4bfbe3ac62 473-476
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "a346db1258073b7d2bc6fed6487346bb93a9dd15",
+  "prompts": {},
+  "humans": {
+    "h_f21e4bfbe3ac62": {
+      "author": "Michał Zochniak <michal.zochniak@zoom.us>"
+    }
+  }
+}
