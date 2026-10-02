@@ -258,6 +258,10 @@ func Parse(r io.Reader) (f func(out, in []byte), err error) {
 // w. The key stretching can be configured with c, which may be
 // nil. In that case, sensible defaults will be used.
 func Serialize(w io.Writer, key []byte, rand io.Reader, passphrase []byte, c *Config) error {
+	hash := c.hash()
+	if !hash.Available() {
+		return errors.UnsupportedError("hash not available: " + strconv.Itoa(int(hash)))
+	}
 	var buf [11]byte
 	buf[0] = 3 /* iterated and salted */
 	buf[1], _ = HashToHashId(c.hash())
@@ -272,7 +276,7 @@ func Serialize(w io.Writer, key []byte, rand io.Reader, passphrase []byte, c *Co
 		return err
 	}
 
-	Iterated(key, c.hash().New(), passphrase, salt, count)
+	Iterated(key, hash.New(), passphrase, salt, count)
 	return nil
 }
 

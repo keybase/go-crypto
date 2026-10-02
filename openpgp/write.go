@@ -470,6 +470,10 @@ func AttachedSign(out io.WriteCloser, signed Entity, hints *FileHints,
 	}
 
 	hasher := config.Hash() // defaults to SHA-256
+	if !hasher.Available() {
+		err = errors.InvalidArgumentError("hash is not available " + strconv.Itoa(int(hasher)))
+		return
+	}
 
 	ops := &packet.OnePassSignature{
 		SigType:    packet.SigTypeBinary,

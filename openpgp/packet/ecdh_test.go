@@ -36,3 +36,19 @@ func TestDecryptKeyECDHRejectsShortKDFHash(t *testing.T) {
 		})
 	}
 }
+
+func TestDecryptKeyECDHRejectsUnavailableRIPEMD160(t *testing.T) {
+	raw, err := ecdh.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("generate: %s", err)
+	}
+	pk := NewECDHPrivateKey(time.Now(), raw)
+	pk.ecdh.KdfHash = kdfHashFunction(3) // RIPEMD160
+	pk.ecdh.KdfAlgo = kdfAlgorithm(CipherAES256)
+
+	want := errors.InvalidArgumentError("unavailable hash in private key")
+	_, err = decryptKeyECDH(pk, raw.PublicKey.X, raw.PublicKey.Y, nil)
+	if err != want {
+		t.Fatalf("decryptKeyECDH: got %v, want %v", err, want)
+	}
+}

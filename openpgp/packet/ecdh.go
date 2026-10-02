@@ -74,6 +74,9 @@ func serializeEncryptedKeyECDH(w io.Writer, rand io.Reader, header [10]byte, pub
 	if !ok {
 		return errors.InvalidArgumentError("invalid hash id in private key")
 	}
+	if !hash.Available() {
+		return errors.InvalidArgumentError("unavailable hash in private key")
+	}
 
 	kdfKeySize := CipherFunction(pub.ecdh.KdfAlgo).KeySize()
 	Vx, Vy, C, err := ecdhpub.Encrypt(rand, kdfParams, keyBlock, hash, kdfKeySize)
