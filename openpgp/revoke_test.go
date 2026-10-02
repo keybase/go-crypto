@@ -187,6 +187,28 @@ func TestMisplacedRevocation(t *testing.T) {
 	}
 }
 
+func TestDesignatedRevokerShortFingerprint(t *testing.T) {
+	el, err := ReadArmoredKeyRing(bytes.NewBufferString(designatedRevokedKeyShortFingerprint))
+	if err != nil || len(el) != 1 {
+		t.Fatalf("Failed to read key: %v", err)
+	}
+	entity := el[0]
+	if _, ok := entity.Identities["Revokee"]; !ok {
+		t.Fatal("Expected to find \"Revokee\" identity.")
+	}
+	// The short fingerprint is skipped, so the foreign revocation is not recorded.
+	if len(entity.Revocations) != 0 || len(entity.UnverifiedRevocations) != 0 {
+		t.Fatalf("revocations = %d, unverified = %d", len(entity.Revocations), len(entity.UnverifiedRevocations))
+	}
+}
+
+func TestDesignatedRevokerTruncatedSubpacket(t *testing.T) {
+	_, err := ReadArmoredKeyRing(bytes.NewBufferString(designatedRevokedKeyTruncatedRevoker))
+	if err == nil || err.Error() != "openpgp: invalid data: invalid revocation key subpacket" {
+		t.Fatalf("got %v", err)
+	}
+}
+
 // Self-revoked key
 const revokedKey1 = `-----BEGIN PGP PUBLIC KEY BLOCK-----
 
@@ -249,6 +271,48 @@ X+duQaFIZV882qD8PZd3b9qS/ZN1EJSBOkJNiWQDAQgHiGEEGBYIAAkFAljeiYUC
 GwwACgkQP8Ztr3e3QIO2KAD+NUOcZekVrfgx7STVdx2N9/zaK8cZSVgp2dWJ4DKE
 1PsA+gM9O4+vwInhP8xGtH816FXJtGiw/mAyxCUeRTgi8KEH
 =qbn3
+-----END PGP PUBLIC KEY BLOCK-----
+`
+
+// designatedRevokedKey with a one-byte revocation-key fingerprint added to the
+// unhashed area of the direct signature. The hashed area is unchanged, so the
+// signature still verifies, and parse keeps the short fingerprint.
+const designatedRevokedKeyShortFingerprint = `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mDMEWN6JhRYJKwYBBAHaRw8BAQdA6NMRLTcnG9zXYIlH8aTxXttm6Ibnd+JcdnZR
+7ZaarAOIYQQgFggACQUCWN6J+wIdAwAKCRCa1MH3xO4k/kqzAQCJRWV9XtLuBALs
+pLfqb3V8+dumX9dNZhzrJejoOyNwIwEAzjpTdaSApbvfdon0ndf05UB+hkR2Sal5
+bDXHANjltAiIfgQfFggAIQUCWN6J0RcMgBbsLs6ylR7EOEBNML2a1MH3xO4k/gIH
+AAAPCRA/xm2vd7dAgwQMgBYBEToA/jlfFEwMEbgxK/KpnDfNDddPQPNnIN/CaHhs
+13YVkmCWAP0StODJa7FWjhz+T9bq+jC7q1XSuEyMf0x/DGbNjbSKC7QHUmV2b2tl
+ZYh5BBMWCAAhBQJY3omFAhsDBQsJCAcCBhUICQoLAgQWAgMBAh4BAheAAAoJED/G
+ba93t0CDTCYA/A4At8cGEoSIxPEK0AnjKckuJVdiZv4B3EtvpD4hKY24AQC3q4Nx
+0z2l9fwGMHvxahWOTHBFmkgwze1yPPpVxHXnD7g4BFjeiYUSCisGAQQBl1UBBQEB
+B0ClzIpf525BoUhlXzzaoPw9l3dv2pL9k3UQlIE6Qk2JZAMBCAeIYQQYFggACQUC
+WN6JhQIbDAAKCRA/xm2vd7dAg7YoAP41Q5xl6RWt+DHtJNV3HY33/NorxxlJWCnZ
+1YngMoTU+wD6Az07j6/AieE/zEa0fzXoVcm0aLD+YDLEJR5FOCLwoQc=
+=oyZc
+-----END PGP PUBLIC KEY BLOCK-----
+`
+
+// designatedRevokedKey with a revocation-key subpacket in the unhashed area
+// whose body is only the class byte. Parse rejects it before the fingerprint
+// is stored.
+const designatedRevokedKeyTruncatedRevoker = `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mDMEWN6JhRYJKwYBBAHaRw8BAQdA6NMRLTcnG9zXYIlH8aTxXttm6Ibnd+JcdnZR
+7ZaarAOIYQQgFggACQUCWN6J+wIdAwAKCRCa1MH3xO4k/kqzAQCJRWV9XtLuBALs
+pLfqb3V8+dumX9dNZhzrJejoOyNwIwEAzjpTdaSApbvfdon0ndf05UB+hkR2Sal5
+bDXHANjltAiIfAQfFggAIQUCWN6J0RcMgBbsLs6ylR7EOEBNML2a1MH3xO4k/gIH
+AAANCRA/xm2vd7dAgwIMgBE6AP45XxRMDBG4MSvyqZw3zQ3XT0DzZyDfwmh4bNd2
+FZJglgD9ErTgyWuxVo4c/k/W6vowu6tV0rhMjH9MfwxmzY20igu0B1Jldm9rZWWI
+eQQTFggAIQUCWN6JhQIbAwULCQgHAgYVCAkKCwIEFgIDAQIeAQIXgAAKCRA/xm2v
+d7dAg0wmAPwOALfHBhKEiMTxCtAJ4ynJLiVXYmb+AdxLb6Q+ISmNuAEAt6uDcdM9
+pfX8BjB78WoVjkxwRZpIMM3tcjz6VcR15w+4OARY3omFEgorBgEEAZdVAQUBAQdA
+pcyKX+duQaFIZV882qD8PZd3b9qS/ZN1EJSBOkJNiWQDAQgHiGEEGBYIAAkFAlje
+iYUCGwwACgkQP8Ztr3e3QIO2KAD+NUOcZekVrfgx7STVdx2N9/zaK8cZSVgp2dWJ
+4DKE1PsA+gM9O4+vwInhP8xGtH816FXJtGiw/mAyxCUeRTgi8KEH
+=VSbY
 -----END PGP PUBLIC KEY BLOCK-----
 `
 

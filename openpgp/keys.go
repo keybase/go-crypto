@@ -529,7 +529,7 @@ EachPacket:
 				}
 			} else if pkt.SigType == packet.SigTypeDirectSignature {
 				if err = e.PrimaryKey.VerifyRevocationSignature(e.PrimaryKey, pkt); err == nil {
-					if desig := pkt.DesignatedRevoker; desig != nil {
+					if desig := pkt.DesignatedRevoker; desig != nil && len(desig.Fingerprint) >= 8 {
 						// If it's a designated revoker signature, take last 8 octects
 						// of fingerprint as Key ID and save it to designatedRevokers
 						// map. We consult this map later to see if a foreign
