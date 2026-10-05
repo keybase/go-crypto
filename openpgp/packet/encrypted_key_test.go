@@ -6,11 +6,18 @@ package packet
 
 import (
 	"bytes"
+	"crypto"
+	"crypto/elliptic"
+	"crypto/rand"
 	"encoding/hex"
 	"fmt"
 	"math/big"
 	"testing"
+	"time"
 
+	"github.com/keybase/go-crypto/openpgp/ecdh"
+	"github.com/keybase/go-crypto/openpgp/elgamal"
+	"github.com/keybase/go-crypto/openpgp/errors"
 	"github.com/keybase/go-crypto/rsa"
 )
 
@@ -148,5 +155,134 @@ func TestSerializingEncryptedKey(t *testing.T) {
 
 	if bufHex := hex.EncodeToString(buf.Bytes()); bufHex != encryptedKeyHex {
 		t.Fatalf("serialization of encrypted key differed from original. Original was %s, but reserialized as %s", encryptedKeyHex, bufHex)
+	}
+}
+
+func TestDecryptingShortECDHKey(t *testing.T) {
+	priv, err := ecdh.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("generate: %s", err)
+	}
+	pk := NewECDHPrivateKey(time.Now(), priv)
+	pub := pk.PublicKey.PublicKey.(*ecdh.PublicKey)
+
+	// An empty plaintext is padded to eight 0x08 bytes. 0x08 is AES-192, so
+	// the unwrapped buffer is shorter than the cipher key plus checksum.
+	Vx, Vy, C, err := pub.Encrypt(rand.Reader, ECDHKdfParams(&pk.PublicKey), nil, crypto.SHA512, CipherAES256.KeySize())
+	if err != nil {
+		t.Fatalf("encrypt: %s", err)
+	}
+	mpi, _ := ecdh.Marshal(pub.Curve, Vx, Vy)
+	ek := &EncryptedKey{
+		Algo:          PubKeyAlgoECDH,
+		encryptedMPI1: parsedMPI{bytes: mpi},
+		ecdh_C:        C,
+	}
+
+	err = ek.Decrypt(pk, nil)
+	if err != errors.InvalidArgumentError("invalid padding while ECDH") {
+		t.Fatalf("Decrypt: got %v, want invalid padding error", err)
+	}
+}
+
+func TestDecryptingEmptyECDHUnwrap(t *testing.T) {
+	priv, err := ecdh.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("generate: %s", err)
+	}
+	pk := NewECDHPrivateKey(time.Now(), priv)
+	pub := pk.PublicKey.PublicKey.(*ecdh.PublicKey)
+	// The static public point is a valid ephemeral point. Its shared secret
+	// does not matter: an 8-byte 0xA6 unwrap does not use the AES key.
+	mpi, _ := ecdh.Marshal(pub.Curve, pub.X, pub.Y)
+	ek := &EncryptedKey{
+		Algo:          PubKeyAlgoECDH,
+		encryptedMPI1: parsedMPI{bytes: mpi},
+		ecdh_C:        bytes.Repeat([]byte{0xA6}, 8),
+	}
+	err = ek.Decrypt(pk, nil)
+	if err != errors.InvalidArgumentError("invalid unwrap while ECDH") {
+		t.Fatalf("Decrypt: got %v, want invalid unwrap error", err)
+	}
+}
+
+func TestDecryptingZeroECDHUnwrap(t *testing.T) {
+	priv, err := ecdh.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("generate: %s", err)
+	}
+	pk := NewECDHPrivateKey(time.Now(), priv)
+	pub := pk.PublicKey.PublicKey.(*ecdh.PublicKey)
+	// A wrapped-key length of 0 is rejected before the first AES block is read.
+	mpi, _ := ecdh.Marshal(pub.Curve, pub.X, pub.Y)
+	ek := &EncryptedKey{
+		Algo:          PubKeyAlgoECDH,
+		encryptedMPI1: parsedMPI{bytes: mpi},
+		ecdh_C:        []byte{},
+	}
+	err = ek.Decrypt(pk, nil)
+	if err == nil || err.Error() != "cipherText must not be zero length" {
+		t.Fatalf("Decrypt: got %v, want cipherText must not be zero length", err)
+	}
+}
+
+func TestDecryptingShortRSAKey(t *testing.T) {
+	for _, n := range []int{0, 1, 2} {
+		ct, err := rsa.EncryptPKCS1v15(rand.Reader, &encryptedKeyPub, make([]byte, n))
+		if err != nil {
+			t.Fatalf("n=%d: encrypt: %s", n, err)
+		}
+		ek := &EncryptedKey{
+			Algo:          PubKeyAlgoRSA,
+			encryptedMPI1: parsedMPI{bytes: ct},
+		}
+		err = ek.Decrypt(encryptedKeyPriv, nil)
+		if err != errors.StructuralError("truncated session key") {
+			t.Fatalf("n=%d: Decrypt: got %v, want truncated session key", n, err)
+		}
+	}
+}
+
+// RFC 5114, section 2.1, 1024-bit MODP group. Same parameters as elgamal_test.go.
+const elGamalPrimeHex = "B10B8F96A080E01DDE92DE5EAE5D54EC52C99FBCFB06A3C69A6A9DCA52D23B616073E28675A23D189838EF1E2EE652C013ECB4AEA906112324975C3CD49B83BFACCBDD7D90C4BD7098488E9C219A73724EFFD6FAE5644738FAA31A4FF55BCCC0A151AF5F0DC8B4BD45BF37DF365C1A65E68CFDA76D4DA708DF1FB2BC2E4A4371"
+const elGamalGeneratorHex = "A4D1CBD5C3FD34126765A442EFB99905F8104DD258AC507FD6406CFF14266D31266FEA1E5C41564B777E690F5504F213160217B4B01B886A5E91547F9E2749F4D7FBD7D3B9A92EE1909D0D2263F80A76A6A24C087A091F531DBF0A0169B6A28AD662A4D18E73AFA32D779D5918D08BC8858F4DCEF97C2A24855E6EEB22B3B2E5"
+
+func TestDecryptingShortElGamalKey(t *testing.T) {
+	p, ok := new(big.Int).SetString(elGamalPrimeHex, 16)
+	if !ok {
+		t.Fatal("bad prime")
+	}
+	g, ok := new(big.Int).SetString(elGamalGeneratorHex, 16)
+	if !ok {
+		t.Fatal("bad generator")
+	}
+	x := big.NewInt(0x42)
+	elgPriv := &elgamal.PrivateKey{
+		PublicKey: elgamal.PublicKey{
+			G: g,
+			P: p,
+			Y: new(big.Int).Exp(g, x, p),
+		},
+		X: x,
+	}
+	packetPriv := &PrivateKey{
+		PublicKey:  PublicKey{PubKeyAlgo: PubKeyAlgoElGamal},
+		PrivateKey: elgPriv,
+	}
+
+	for _, n := range []int{0, 1, 2} {
+		c1, c2, err := elgamal.Encrypt(rand.Reader, &elgPriv.PublicKey, make([]byte, n))
+		if err != nil {
+			t.Fatalf("n=%d: encrypt: %s", n, err)
+		}
+		ek := &EncryptedKey{
+			Algo:          PubKeyAlgoElGamal,
+			encryptedMPI1: parsedMPI{bytes: c1.Bytes()},
+			encryptedMPI2: parsedMPI{bytes: c2.Bytes()},
+		}
+		err = ek.Decrypt(packetPriv, nil)
+		if err != errors.StructuralError("truncated session key") {
+			t.Fatalf("n=%d: Decrypt: got %v, want truncated session key", n, err)
+		}
 	}
 }

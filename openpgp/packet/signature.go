@@ -449,10 +449,16 @@ func parseSignatureSubpacket(sig *Signature, subpacket []byte, isHashed bool) (r
 	case issuerFingerprint:
 		// The first byte is how many bytes the fingerprint is, but we'll just
 		// read until the end of the subpacket, so we'll ignore it.
+		if len(subpacket) == 0 {
+			return nil, errors.StructuralError("empty issuer fingerprint subpacket")
+		}
 		sig.IssuerFingerprint = append([]byte{}, subpacket[1:]...)
 	case revocationKey:
 		// Authorizes the specified key to issue revocation signatures
 		// for a key.
+		if len(subpacket) < 3 {
+			return nil, errors.StructuralError("invalid revocation key subpacket")
+		}
 
 		// TODO: Class octet must have bit 0x80 set. If the bit 0x40
 		// is set, then this means that the revocation information is

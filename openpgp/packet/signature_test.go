@@ -8,8 +8,10 @@ import (
 	"bytes"
 	"crypto"
 	"encoding/hex"
+	"strings"
 	"testing"
 
+	"github.com/keybase/go-crypto/openpgp/armor"
 	"github.com/keybase/go-crypto/openpgp/errors"
 )
 
@@ -22,6 +24,28 @@ func TestSignatureRead(t *testing.T) {
 	sig, ok := packet.(*Signature)
 	if !ok || sig.SigType != SigTypeBinary || sig.PubKeyAlgo != PubKeyAlgoRSA || sig.Hash != crypto.SHA1 {
 		t.Errorf("failed to parse, got: %#v", packet)
+	}
+}
+
+func TestSignatureEmptyFingerprint(t *testing.T) {
+	armoredSig := `-----BEGIN PGP SIGNATURE-----
+
+wpQEEAEIAAgFAohuCQABIQAATHUEAIiL44Hde8vbjvtHwx71Pr+gdxP1WoCifxaD
+JKBccKkn82LY1qkfj50BvG0znrloMeQpfLZX1ybHiJwXG0P+cTQJ8m4GkwxlhBkT
+BhLGOpf6bhM+HhXONIyoG9qp2ZVpgdOoC3zrsUuHvWKelBT8a3t6mCaTDmpvEMf1
+ltm2aQaG
+=ZWr8
+-----END PGP SIGNATURE-----
+	`
+	unarmored, err := armor.Decode(strings.NewReader(armoredSig))
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	_, err = Read(unarmored.Body)
+	if err == nil {
+		t.Errorf("Expected a parsing error")
+		return
 	}
 }
 

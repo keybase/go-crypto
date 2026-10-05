@@ -7,9 +7,10 @@ import (
 	"crypto/elliptic"
 	"encoding/binary"
 	"errors"
-	"github.com/keybase/go-crypto/curve25519"
 	"io"
 	"math/big"
+
+	"github.com/keybase/go-crypto/curve25519"
 )
 
 type PublicKey struct {
@@ -50,8 +51,11 @@ func (e *PublicKey) KDF(S []byte, kdfParams []byte, hash crypto.Hash) []byte {
 // Note: The second described algorithm ("index-based") is implemented
 // here.
 func AESKeyUnwrap(key, cipherText []byte) ([]byte, error) {
+	if len(cipherText) == 0 {
+		return nil, errors.New("cipherText must not be zero length")
+	}
 	if len(cipherText)%8 != 0 {
-		return nil, errors.New("cipherText must by a multiple of 64 bits")
+		return nil, errors.New("cipherText must be a multiple of 64 bits")
 	}
 
 	cipher, err := aes.NewCipher(key)
@@ -175,6 +179,10 @@ func PadBuffer(buf []byte, blockLen int) []byte {
 // returns buffer without the padding, or nil if the padding was
 // invalid.
 func UnpadBuffer(buf []byte, dataLen int) []byte {
+	if len(buf) < dataLen {
+		// Buffer not long enough.
+		return nil
+	}
 	padding := len(buf) - dataLen
 	outBuf := buf[:dataLen]
 
@@ -210,6 +218,9 @@ func (e *PublicKey) Encrypt(random io.Reader, kdfParams []byte, plain []byte, ha
 
 	plain = PadBuffer(plain, 8)
 	key := e.KDF(Sx.Bytes(), kdfParams, hash)
+	if len(key) < kdfKeySize {
+		return nil, nil, nil, errors.New("ecdh: KDF hash output is shorter than the cipher key size")
+	}
 
 	// Take only as many bytes from key as the key length (the hash
 	// result might be bigger)
@@ -299,7 +310,7 @@ func GenerateKey(curve elliptic.Curve, random io.Reader) (priv *PrivateKey, err 
 		privBytes[0] &= 127
 		privBytes[0] |= 64
 
-		Vx,Vy = curve.ScalarBaseMult(privBytes)
+		Vx, Vy = curve.ScalarBaseMult(privBytes)
 	} else {
 		privBytes, Vx, Vy, err = elliptic.GenerateKey(curve, random)
 		if err != nil {

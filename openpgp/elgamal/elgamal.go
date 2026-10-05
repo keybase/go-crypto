@@ -71,15 +71,20 @@ func Encrypt(random io.Reader, pub *PublicKey, msg []byte) (c1, c2 *big.Int, err
 // returns the plaintext of the message. An error can result only if the
 // ciphertext is invalid. Users should keep in mind that this is a padding
 // oracle and thus, if exposed to an adaptive chosen ciphertext attack, can
-// be used to break the cryptosystem.  See ``Chosen Ciphertext Attacks
-// Against Protocols Based on the RSA Encryption Standard PKCS #1'', Daniel
+// be used to break the cryptosystem.  See “Chosen Ciphertext Attacks
+// Against Protocols Based on the RSA Encryption Standard PKCS #1”, Daniel
 // Bleichenbacher, Advances in Cryptology (Crypto '98),
 func Decrypt(priv *PrivateKey, c1, c2 *big.Int) (msg []byte, err error) {
 	s := new(big.Int).Exp(c1, priv.X, priv.P)
-	s.ModInverse(s, priv.P)
+	if s.ModInverse(s, priv.P) == nil {
+		return nil, errors.New("elgamal: decryption error")
+	}
 	s.Mul(s, c2)
 	s.Mod(s, priv.P)
 	em := s.Bytes()
+	if len(em) == 0 {
+		return nil, errors.New("elgamal: decryption error")
+	}
 
 	firstByteIsTwo := subtle.ConstantTimeByteEq(em[0], 2)
 

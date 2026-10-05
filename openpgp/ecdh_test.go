@@ -6,6 +6,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"encoding/binary"
 	"io"
 	"io/ioutil"
 	"strings"
@@ -16,6 +17,7 @@ import (
 	"github.com/keybase/go-crypto/curve25519"
 	"github.com/keybase/go-crypto/openpgp/armor"
 	"github.com/keybase/go-crypto/openpgp/ecdh"
+	"github.com/keybase/go-crypto/openpgp/errors"
 	"github.com/keybase/go-crypto/openpgp/packet"
 )
 
@@ -615,3 +617,168 @@ PQTqtFy9X7/g5+N1jJ4VJlOmKeAN5KKO0UHANZoGGZr3etDvZsbicxMuXOFBrwA=
 -----END PGP MESSAGE-----
 
 `
+
+func TestReadMessageEmptyECDHUnwrap(t *testing.T) {
+	priv, err := ecdh.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("generate: %s", err)
+	}
+	pk := packet.NewECDHPrivateKey(time.Now(), priv)
+	pub := pk.PublicKey.PublicKey.(*ecdh.PublicKey)
+	// The static public point is a valid ephemeral point. An 8-byte 0xA6
+	// unwrap does not use the AES key and returns an empty session key.
+	mpi, bitLen := ecdh.Marshal(pub.Curve, pub.X, pub.Y)
+
+	body := new(bytes.Buffer)
+	body.WriteByte(3)
+	var keyID [8]byte
+	binary.BigEndian.PutUint64(keyID[:], pk.KeyId)
+	body.Write(keyID[:])
+	body.WriteByte(byte(packet.PubKeyAlgoECDH))
+	body.Write([]byte{byte(bitLen >> 8), byte(bitLen)})
+	body.Write(mpi)
+	body.WriteByte(8)
+	body.Write(bytes.Repeat([]byte{0xA6}, 8))
+
+	msg := new(bytes.Buffer)
+	// Tag 1, public-key encrypted session key.
+	msg.WriteByte(0xC1)
+	msg.WriteByte(byte(body.Len()))
+	msg.Write(body.Bytes())
+	// Tag 9, empty symmetrically encrypted data. ReadMessage decrypts the
+	// session key before reading this body.
+	msg.Write([]byte{0xC9, 0x00})
+
+	// Decrypt's unwrap error is discarded. ReadMessage reports that no key worked.
+	_, err = ReadMessage(bytes.NewReader(msg.Bytes()), EntityList{{
+		PrimaryKey: &pk.PublicKey,
+		PrivateKey: pk,
+	}}, nil, nil)
+	if err != errors.ErrKeyIncorrect {
+		t.Fatalf("ReadMessage: got %v, want ErrKeyIncorrect", err)
+	}
+}
+
+func TestReadMessageShortECDHKey(t *testing.T) {
+	priv, err := ecdh.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("generate: %s", err)
+	}
+	pk := packet.NewECDHPrivateKey(time.Now(), priv)
+	pub := pk.PublicKey.PublicKey.(*ecdh.PublicKey)
+
+	// An empty plaintext is padded to eight 0x08 bytes. 0x08 is AES-192, so
+	// the unwrapped buffer is shorter than the cipher key plus checksum.
+	Vx, Vy, C, err := pub.Encrypt(rand.Reader, packet.ECDHKdfParams(&pk.PublicKey), nil, crypto.SHA512, packet.CipherAES256.KeySize())
+	if err != nil {
+		t.Fatalf("encrypt: %s", err)
+	}
+	mpi, bitLen := ecdh.Marshal(pub.Curve, Vx, Vy)
+
+	body := new(bytes.Buffer)
+	body.WriteByte(3)
+	var keyID [8]byte
+	binary.BigEndian.PutUint64(keyID[:], pk.KeyId)
+	body.Write(keyID[:])
+	body.WriteByte(byte(packet.PubKeyAlgoECDH))
+	body.Write([]byte{byte(bitLen >> 8), byte(bitLen)})
+	body.Write(mpi)
+	body.WriteByte(byte(len(C)))
+	body.Write(C)
+
+	msg := new(bytes.Buffer)
+	msg.WriteByte(0xC1)
+	msg.WriteByte(byte(body.Len()))
+	msg.Write(body.Bytes())
+	msg.Write([]byte{0xC9, 0x00})
+
+	_, err = ReadMessage(bytes.NewReader(msg.Bytes()), EntityList{{
+		PrimaryKey: &pk.PublicKey,
+		PrivateKey: pk,
+	}}, nil, nil)
+	if err != errors.ErrKeyIncorrect {
+		t.Fatalf("ReadMessage: got %v, want ErrKeyIncorrect", err)
+	}
+}
+
+func TestReadMessageZeroECDHUnwrap(t *testing.T) {
+	priv, err := ecdh.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("generate: %s", err)
+	}
+	pk := packet.NewECDHPrivateKey(time.Now(), priv)
+	pub := pk.PublicKey.PublicKey.(*ecdh.PublicKey)
+	// A wrapped-key length of 0 is rejected before AESKeyUnwrap reads a block.
+	// ReadMessage discards that error and reports that no key worked.
+	mpi, bitLen := ecdh.Marshal(pub.Curve, pub.X, pub.Y)
+
+	body := new(bytes.Buffer)
+	body.WriteByte(3)
+	var keyID [8]byte
+	binary.BigEndian.PutUint64(keyID[:], pk.KeyId)
+	body.Write(keyID[:])
+	body.WriteByte(byte(packet.PubKeyAlgoECDH))
+	body.Write([]byte{byte(bitLen >> 8), byte(bitLen)})
+	body.Write(mpi)
+	body.WriteByte(0)
+
+	msg := new(bytes.Buffer)
+	// Tag 1, public-key encrypted session key.
+	msg.WriteByte(0xC1)
+	msg.WriteByte(byte(body.Len()))
+	msg.Write(body.Bytes())
+	// Tag 9, empty symmetrically encrypted data. ReadMessage decrypts the
+	// session key before reading this body.
+	msg.Write([]byte{0xC9, 0x00})
+
+	_, err = ReadMessage(bytes.NewReader(msg.Bytes()), EntityList{{
+		PrimaryKey: &pk.PublicKey,
+		PrivateKey: pk,
+	}}, nil, nil)
+	if err != errors.ErrKeyIncorrect {
+		t.Fatalf("ReadMessage: got %v, want ErrKeyIncorrect", err)
+	}
+}
+
+func TestEncryptRejectsShortKDFHash(t *testing.T) {
+	// Both digests are shorter than an AES-256 key.
+	const want = "ecdh: KDF hash output is shorter than the cipher key size"
+	for _, tc := range []struct {
+		name string
+		hash byte
+	}{
+		{name: "sha224 shorter than aes256", hash: 11}, // SHA224, 28 bytes
+		{name: "sha1 shorter than aes256", hash: 2},    // SHA1, 20 bytes
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			entity := generateEccKeysForTest(t, elliptic.P256(), elliptic.P256())
+			var raw bytes.Buffer
+			if err := entity.Subkeys[0].PublicKey.Serialize(&raw); err != nil {
+				t.Fatalf("serialize: %s", err)
+			}
+			packetBytes := raw.Bytes()
+			// NewECDHPublicKey ends the packet with KDF params
+			// 03 01 <hash> <cipher>: SHA-512 (10) and AES-256 (9).
+			trailer := packetBytes[len(packetBytes)-4:]
+			if !bytes.Equal(trailer, []byte{0x03, 0x01, 0x0a, 0x09}) {
+				t.Fatalf("kdf trailer: got %x", trailer)
+			}
+			packetBytes[len(packetBytes)-2] = tc.hash
+
+			p, err := packet.Read(bytes.NewReader(packetBytes))
+			if err != nil {
+				t.Fatalf("parse: %s", err)
+			}
+			pub, ok := p.(*packet.PublicKey)
+			if !ok {
+				t.Fatalf("parsed %T", p)
+			}
+			entity.Subkeys[0].PublicKey = pub
+
+			_, err = Encrypt(new(bytes.Buffer), []*Entity{entity}, nil, nil, nil)
+			if err == nil || err.Error() != want {
+				t.Fatalf("Encrypt: got %v, want %s", err, want)
+			}
+		})
+	}
+}

@@ -905,7 +905,7 @@ func TestSignedTextMessageNoSignature(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !md.IsSigned || md.SignedByKeyId != 0xa34d7e18c20c31bb || md.SignedBy == nil || md.IsEncrypted || md.IsSymmetricallyEncrypted || len(md.EncryptedToKeyIds) != 0 || md.IsSymmetricallyEncrypted || md.MultiSig {
+	if !md.IsSigned || md.SignedByKeyId != 0xa34d7e18c20c31bb || md.SignedBy == nil || md.IsEncrypted || len(md.EncryptedToKeyIds) != 0 || md.IsSymmetricallyEncrypted || md.MultiSig {
 		t.Errorf("bad MessageDetails: %#v", md)
 	}
 

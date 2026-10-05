@@ -240,6 +240,26 @@ func fromHex(hex string) *big.Int {
 	return n
 }
 
+func TestECDHPublicKeyShortKDFHash(t *testing.T) {
+	oid := []byte{0x0a, 0x2b, 0x06, 0x01, 0x04, 0x01, 0x97, 0x55, 0x01, 0x05, 0x01} // Curve25519Legacy
+	body := []byte{4, 0, 0, 0, 0, byte(PubKeyAlgoECDH)}
+	body = append(body, oid...)
+	body = append(body, 0x01, 0x07, 0x40, 9) // MPI: 0x40-prefixed point
+	body = append(body, make([]byte, 31)...)
+	body = append(body, 0x03, 0x01, 0x0b, 0x09) // KDF: SHA224, AES256
+
+	// We currently do not error out when loading a key with KDF hash output
+	// shorter than KDF key size, but we want to make sure we don't panic.
+	err := new(PublicKey).parse(bytes.NewReader(body))
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+
+	// We error out when using such keys, which is tested in:
+	// - TestDecryptKeyECDHRejectsShortKDFHash
+	// - TestShortKDFHashRejected
+}
+
 const rsaFingerprintHex = "5fb74b1d03b1e3cb31bc2f8aa34d7e18c20c31bb"
 
 const rsaPkDataHex = "988d044d3c5c10010400b1d13382944bd5aba23a4312968b5095d14f947f600eb478e14a6fcb16b0e0cac764884909c020bc495cfcc39a935387c661507bdb236a0612fb582cac3af9b29cc2c8c70090616c41b662f4da4c1201e195472eb7f4ae1ccbcbf9940fe21d985e379a5563dde5b9a23d35f1cfaa5790da3b79db26f23695107bfaca8e7b5bcd0011010001"

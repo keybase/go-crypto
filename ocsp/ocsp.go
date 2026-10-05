@@ -637,6 +637,9 @@ func CreateResponse(issuer, responderCert *x509.Certificate, template Response, 
 	if err != nil {
 		return nil, err
 	}
+	if !hashFunc.Available() {
+		return nil, errors.New("hash is not available")
+	}
 
 	responseHash := hashFunc.New()
 	responseHash.Write(tbsResponseDataDER)
