@@ -1,0 +1,26 @@
+openpgp/ecdh_test.go
+  s_d229c6a175c455::t_e729fa6a5a5776 745,750-751
+  s_d229c6a175c455::t_992e19796ae868 779-780
+  h_f21e4bfbe3ac62 744
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "a3efa43362a32909c29413d1b2846406f73e7019",
+  "prompts": {},
+  "humans": {
+    "h_f21e4bfbe3ac62": {
+      "author": "Michał Zochniak <michal.zochniak@zoom.us>"
+    }
+  },
+  "sessions": {
+    "s_d229c6a175c455": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c29db129-fe77-4d98-aa61-d2a9f5af2226",
+        "model": "grok-4.7"
+      },
+      "human_author": "Michał Zochniak <michal.zochniak@zoom.us>"
+    }
+  }
+}
