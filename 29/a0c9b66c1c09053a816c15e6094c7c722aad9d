@@ -1,0 +1,14 @@
+openpgp/ecdh/ecdh_test.go
+  h_f21e4bfbe3ac62 165
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "29a0c9b66c1c09053a816c15e6094c7c722aad9d",
+  "prompts": {},
+  "humans": {
+    "h_f21e4bfbe3ac62": {
+      "author": "Michał Zochniak <michal.zochniak@zoom.us>"
+    }
+  }
+}
