@@ -245,7 +245,7 @@ const (
 	regularExpressionSubpacket   signatureSubpacketType = 6
 	keyExpirationSubpacket       signatureSubpacketType = 9
 	prefSymmetricAlgosSubpacket  signatureSubpacketType = 11
-	revocationKey                signatureSubpacketType = 12
+	revocationKeySubpacket       signatureSubpacketType = 12
 	issuerSubpacket              signatureSubpacketType = 16
 	prefHashAlgosSubpacket       signatureSubpacketType = 21
 	prefCompressionSubpacket     signatureSubpacketType = 22
@@ -256,7 +256,7 @@ const (
 	reasonForRevocationSubpacket signatureSubpacketType = 29
 	featuresSubpacket            signatureSubpacketType = 30
 	embeddedSignatureSubpacket   signatureSubpacketType = 32
-	issuerFingerprint            signatureSubpacketType = 33
+	issuerFingerprintSubpacket   signatureSubpacketType = 33
 )
 
 // parseSignatureSubpacket parses a single subpacket. len(subpacket) is >= 1.
@@ -302,7 +302,7 @@ func parseSignatureSubpacket(sig *Signature, subpacket []byte, isHashed bool) (r
 	sig.rawSubpackets = append(sig.rawSubpackets, outputSubpacket{isHashed, packetType, isCritical, subpacket})
 	if !isHashed &&
 		packetType != issuerSubpacket &&
-		packetType != issuerFingerprint &&
+		packetType != issuerFingerprintSubpacket &&
 		packetType != embeddedSignatureSubpacket {
 		return
 	}
@@ -424,14 +424,14 @@ func parseSignatureSubpacket(sig *Signature, subpacket []byte, isHashed bool) (r
 		}
 	case prefKeyServerSubpacket:
 		sig.PreferredKeyServer = string(subpacket[:])
-	case issuerFingerprint:
+	case issuerFingerprintSubpacket:
 		// The first byte is how many bytes the fingerprint is, but we'll just
 		// read until the end of the subpacket, so we'll ignore it.
 		if len(subpacket) == 0 {
 			return nil, errors.StructuralError("empty issuer fingerprint subpacket")
 		}
 		sig.IssuerFingerprint = append([]byte{}, subpacket[1:]...)
-	case revocationKey:
+	case revocationKeySubpacket:
 		// Authorizes the specified key to issue revocation signatures
 		// for a key.
 		if len(subpacket) < 3 {
