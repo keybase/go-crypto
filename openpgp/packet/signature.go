@@ -426,6 +426,11 @@ func parseSignatureSubpacket(sig *Signature, subpacket []byte, isHashed bool) (r
 			err = errors.StructuralError("Cannot have multiple embedded signatures")
 			return
 		}
+		// A Primary Key Binding signature must not itself carry an embedded
+		// signature, otherwise the structure can recurse without bound.
+		if sig.SigType == SigTypePrimaryKeyBinding {
+			return nil, errors.StructuralError("embedded signature within a primary key binding signature")
+		}
 		sig.EmbeddedSignature = new(Signature)
 		// Embedded signatures are required to be v4 signatures see
 		// section 12.1. However, we only parse v4 signatures in this
