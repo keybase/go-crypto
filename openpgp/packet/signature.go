@@ -245,7 +245,7 @@ const (
 	regularExpressionSubpacket   signatureSubpacketType = 6
 	keyExpirationSubpacket       signatureSubpacketType = 9
 	prefSymmetricAlgosSubpacket  signatureSubpacketType = 11
-	revocationKey                signatureSubpacketType = 12
+	revocationKeySubpacket       signatureSubpacketType = 12
 	issuerSubpacket              signatureSubpacketType = 16
 	prefHashAlgosSubpacket       signatureSubpacketType = 21
 	prefCompressionSubpacket     signatureSubpacketType = 22
@@ -256,7 +256,7 @@ const (
 	reasonForRevocationSubpacket signatureSubpacketType = 29
 	featuresSubpacket            signatureSubpacketType = 30
 	embeddedSignatureSubpacket   signatureSubpacketType = 32
-	issuerFingerprint            signatureSubpacketType = 33
+	issuerFingerprintSubpacket   signatureSubpacketType = 33
 )
 
 // parseSignatureSubpacket parses a single subpacket. len(subpacket) is >= 1.
@@ -300,12 +300,14 @@ func parseSignatureSubpacket(sig *Signature, subpacket []byte, isHashed bool) (r
 	isCritical = subpacket[0]&0x80 == 0x80
 	subpacket = subpacket[1:]
 	sig.rawSubpackets = append(sig.rawSubpackets, outputSubpacket{isHashed, packetType, isCritical, subpacket})
+	if !isHashed &&
+		packetType != issuerSubpacket &&
+		packetType != issuerFingerprintSubpacket &&
+		packetType != embeddedSignatureSubpacket {
+		return
+	}
 	switch packetType {
 	case creationTimeSubpacket:
-		if !isHashed {
-			err = errors.StructuralError("signature creation time in non-hashed area")
-			return
-		}
 		if len(subpacket) != 4 {
 			err = errors.StructuralError("signature creation time not four bytes")
 			return
@@ -314,9 +316,6 @@ func parseSignatureSubpacket(sig *Signature, subpacket []byte, isHashed bool) (r
 		sig.CreationTime = time.Unix(int64(t), 0)
 	case signatureExpirationSubpacket:
 		// Signature expiration time, section 5.2.3.10
-		if !isHashed {
-			return
-		}
 		if len(subpacket) != 4 {
 			err = errors.StructuralError("expiration subpacket with bad length")
 			return
@@ -325,9 +324,6 @@ func parseSignatureSubpacket(sig *Signature, subpacket []byte, isHashed bool) (r
 		*sig.SigLifetimeSecs = binary.BigEndian.Uint32(subpacket)
 	case keyExpirationSubpacket:
 		// Key expiration time, section 5.2.3.6
-		if !isHashed {
-			return
-		}
 		if len(subpacket) != 4 {
 			err = errors.StructuralError("key expiration subpacket with bad length")
 			return
@@ -336,9 +332,6 @@ func parseSignatureSubpacket(sig *Signature, subpacket []byte, isHashed bool) (r
 		*sig.KeyLifetimeSecs = binary.BigEndian.Uint32(subpacket)
 	case prefSymmetricAlgosSubpacket:
 		// Preferred symmetric algorithms, section 5.2.3.7
-		if !isHashed {
-			return
-		}
 		sig.PreferredSymmetric = make([]byte, len(subpacket))
 		copy(sig.PreferredSymmetric, subpacket)
 	case issuerSubpacket:
@@ -351,23 +344,14 @@ func parseSignatureSubpacket(sig *Signature, subpacket []byte, isHashed bool) (r
 		*sig.IssuerKeyId = binary.BigEndian.Uint64(subpacket)
 	case prefHashAlgosSubpacket:
 		// Preferred hash algorithms, section 5.2.3.8
-		if !isHashed {
-			return
-		}
 		sig.PreferredHash = make([]byte, len(subpacket))
 		copy(sig.PreferredHash, subpacket)
 	case prefCompressionSubpacket:
 		// Preferred compression algorithms, section 5.2.3.9
-		if !isHashed {
-			return
-		}
 		sig.PreferredCompression = make([]byte, len(subpacket))
 		copy(sig.PreferredCompression, subpacket)
 	case primaryUserIdSubpacket:
 		// Primary User ID, section 5.2.3.19
-		if !isHashed {
-			return
-		}
 		if len(subpacket) != 1 {
 			err = errors.StructuralError("primary user id subpacket with bad length")
 			return
@@ -378,9 +362,6 @@ func parseSignatureSubpacket(sig *Signature, subpacket []byte, isHashed bool) (r
 		}
 	case keyFlagsSubpacket:
 		// Key flags, section 5.2.3.21
-		if !isHashed {
-			return
-		}
 		if len(subpacket) == 0 {
 			err = errors.StructuralError("empty key flags subpacket")
 			return
@@ -402,9 +383,6 @@ func parseSignatureSubpacket(sig *Signature, subpacket []byte, isHashed bool) (r
 		}
 	case reasonForRevocationSubpacket:
 		// Reason For Revocation, section 5.2.3.23
-		if !isHashed {
-			return
-		}
 		if len(subpacket) == 0 {
 			err = errors.StructuralError("empty revocation reason subpacket")
 			return
@@ -451,14 +429,14 @@ func parseSignatureSubpacket(sig *Signature, subpacket []byte, isHashed bool) (r
 		}
 	case prefKeyServerSubpacket:
 		sig.PreferredKeyServer = string(subpacket[:])
-	case issuerFingerprint:
+	case issuerFingerprintSubpacket:
 		// The first byte is how many bytes the fingerprint is, but we'll just
 		// read until the end of the subpacket, so we'll ignore it.
 		if len(subpacket) == 0 {
 			return nil, errors.StructuralError("empty issuer fingerprint subpacket")
 		}
 		sig.IssuerFingerprint = append([]byte{}, subpacket[1:]...)
-	case revocationKey:
+	case revocationKeySubpacket:
 		// Authorizes the specified key to issue revocation signatures
 		// for a key.
 		if len(subpacket) < 3 {
