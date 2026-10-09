@@ -225,6 +225,9 @@ func (e *PublicKey) Encrypt(random io.Reader, kdfParams []byte, plain []byte, ha
 	// Take only as many bytes from key as the key length (the hash
 	// result might be bigger)
 	encrypted, err := AESKeyWrap(key[:kdfKeySize], plain)
+	if err != nil {
+		return nil, nil, nil, err
+	}
 
 	return Vx, Vy, encrypted, nil
 }
