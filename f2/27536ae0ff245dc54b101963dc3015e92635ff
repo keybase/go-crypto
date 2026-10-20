@@ -1,0 +1,43 @@
+openpgp/packet/reader.go
+  h_f21e4bfbe3ac62 18,67-98,112-123
+openpgp/packet/budget.go
+  h_f21e4bfbe3ac62 1-79
+openpgp/packet/config.go
+  h_f21e4bfbe3ac62 52-56,104-110
+openpgp/errors/errors.go
+  h_f21e4bfbe3ac62 81-89
+openpgp/packet/compressed.go
+  h_f21e4bfbe3ac62 21,51-56
+openpgp/read.go
+  h_f21e4bfbe3ac62 97,253
+openpgp/read_test.go
+  h_f21e4bfbe3ac62 11,926-966,2767-2820
+openpgp/read_limit_test.go
+  s_ae1c5637d0ce7f::t_0628e40c225a16 5
+  h_f21e4bfbe3ac62 1,112
+  s_ae1c5637d0ce7f::t_f72fe482054414 107-111,113-136,153-158,163-182
+  s_ae1c5637d0ce7f::t_6e49ea32c368be 137-152,159-162
+  s_ae1c5637d0ce7f::t_dc393e7d76b31a 2-4,7-106
+  s_ae1c5637d0ce7f::t_e13990f8344afd 6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "f227536ae0ff245dc54b101963dc3015e92635ff",
+  "prompts": {},
+  "humans": {
+    "h_f21e4bfbe3ac62": {
+      "author": "Michał Zochniak <michal.zochniak@zoom.us>"
+    }
+  },
+  "sessions": {
+    "s_ae1c5637d0ce7f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "94baa72a-933e-4504-a658-3473be41e96b",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Michał Zochniak <michal.zochniak@zoom.us>"
+    }
+  }
+}
