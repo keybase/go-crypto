@@ -1,0 +1,59 @@
+openpgp/packet/config.go
+  h_f21e4bfbe3ac62 52-56,104-110
+openpgp/read_test.go
+  h_f21e4bfbe3ac62 11,926-964,988-989,2790-2843
+  s_e2a7b725c5b7f7::t_4ecb0510fcbb07 965-987
+openpgp/read.go
+  h_f21e4bfbe3ac62 97,253
+openpgp/packet/budget.go
+  h_f21e4bfbe3ac62 1-79
+openpgp/packet/compressed.go
+  h_f21e4bfbe3ac62 21,51-56
+openpgp/packet/reader.go
+  h_f21e4bfbe3ac62 18,67-98,112-123
+openpgp/errors/errors.go
+  h_f21e4bfbe3ac62 81-89
+openpgp/read_limit_test.go
+  s_ae1c5637d0ce7f::t_0628e40c225a16 5
+  s_ae1c5637d0ce7f::t_dc393e7d76b31a 2-4,7-50,54,56,58-59,84-94,106-109,112-124,128,131-132,134,136-139
+  s_e2a7b725c5b7f7::t_3790900d097712 95-105,110-111
+  s_e2a7b725c5b7f7::t_21fc813b4c56a2 187-189,192,195,199,206-216,220-224
+  s_e2a7b725c5b7f7::t_07f80bf056a071 218-219,227,230
+  s_ae1c5637d0ce7f::t_e13990f8344afd 6
+  s_ae1c5637d0ce7f::t_6e49ea32c368be 170-185,196-198
+  s_e2a7b725c5b7f7::t_25533258b47b0b 51-53,55,57,60-68,71-81
+  s_e2a7b725c5b7f7::t_0419758b5d174d 125-127,129-130,133,135
+  s_ae1c5637d0ce7f::t_f72fe482054414 82,140-142,144,146-169,186,190-191,193-194,200-204,217,225-226,229,231-232
+  s_e2a7b725c5b7f7::t_d627163e92bb42 228
+  s_ae1c5637d0ce7f::t_e44f35ec0d38c9 83
+  h_f21e4bfbe3ac62 1,69-70,143,145,205
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "940ad45426da49d756d51203dc27ed3b9ec80f95",
+  "prompts": {},
+  "humans": {
+    "h_f21e4bfbe3ac62": {
+      "author": "Michał Zochniak <michal.zochniak@zoom.us>"
+    }
+  },
+  "sessions": {
+    "s_ae1c5637d0ce7f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "94baa72a-933e-4504-a658-3473be41e96b",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Michał Zochniak <michal.zochniak@zoom.us>"
+    },
+    "s_e2a7b725c5b7f7": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b1262ec0-7c1d-4804-b7fe-ac59f6a206d8",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": null
+    }
+  }
+}
