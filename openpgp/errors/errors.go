@@ -78,3 +78,12 @@ type DeprecatedKeyError string
 func (d DeprecatedKeyError) Error() string {
 	return "openpgp: key is deprecated: " + string(d)
 }
+
+type messageTooLargeError int
+
+func (e messageTooLargeError) Error() string {
+	return "openpgp: message size exceeds provided limit"
+}
+
+// ErrMessageTooLarge is returned if the read data exceeds the provided limit.
+var ErrMessageTooLarge error = messageTooLargeError(0)

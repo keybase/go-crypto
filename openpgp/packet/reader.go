@@ -15,6 +15,7 @@ import (
 type Reader struct {
 	q       []Packet
 	readers []io.Reader
+	budget  *int64
 }
 
 // New io.Readers are pushed when a compressed or encrypted packet is processed
@@ -63,6 +64,40 @@ func (r *Reader) Push(reader io.Reader) (err error) {
 	return nil
 }
 
+func (r *Reader) PushCompressed(compressed *Compressed) (err error) {
+	if r.budget == nil {
+		return r.Push(compressed.Body)
+	}
+	if len(r.readers) >= maxReaders {
+		return errors.StructuralError("too many layers of packets")
+	}
+	// If there's already a limitCompressedReader on the stack, just add a
+	// limitReader and charge the full decompressed bytes to the budget.
+	//
+	// TODO: Change to slices.ContainsFunc if all consumers are on golang 1.21
+	// or higher.
+	isInnerCompressed := false
+	for _, v := range r.readers {
+		if _, ok := v.(*limitCompressedReader); ok {
+			isInnerCompressed = true
+			break
+		}
+	}
+	if isInnerCompressed {
+		r.readers = append(r.readers, &limitReader{
+			reader: compressed.Body,
+			budget: r.budget,
+		})
+		return nil
+	}
+	r.readers = append(r.readers, &limitCompressedReader{
+		body:     compressed.Body,
+		counting: compressed.counting,
+		budget:   r.budget,
+	})
+	return nil
+}
+
 // Unread causes the given Packet to be returned from the next call to Next.
 func (r *Reader) Unread(p Packet) {
 	r.q = append(r.q, p)
@@ -72,5 +107,17 @@ func NewReader(r io.Reader) *Reader {
 	return &Reader{
 		q:       nil,
 		readers: []io.Reader{r},
+	}
+}
+
+func NewReaderWithBudget(r io.Reader, budget *int64) *Reader {
+	if budget == nil {
+		return NewReader(r)
+	}
+	b := *budget
+	return &Reader{
+		q:       nil,
+		readers: []io.Reader{&limitReader{reader: r, budget: &b}},
+		budget:  &b,
 	}
 }

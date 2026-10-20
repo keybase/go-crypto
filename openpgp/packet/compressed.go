@@ -17,7 +17,8 @@ import (
 // Compressed represents a compressed OpenPGP packet. The decompressed contents
 // will contain more OpenPGP packets. See RFC 4880, section 5.6.
 type Compressed struct {
-	Body io.Reader
+	Body     io.Reader
+	counting *countingReader
 }
 
 const (
@@ -46,6 +47,12 @@ func (c *Compressed) parse(r io.Reader) error {
 	if err != nil {
 		return err
 	}
+
+	// Set up a counting reader so when read size limit is being set,
+	// limitCompressedReader knows how much compressed data was read compared
+	// to inflated data. See `PushCompressed`.
+	c.counting = &countingReader{Reader: r}
+	r = c.counting
 
 	switch buf[0] {
 	case 1:

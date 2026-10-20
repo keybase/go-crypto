@@ -49,6 +49,11 @@ type Config struct {
 	// ReuseSignatures tells us to reuse existing Signatures
 	// on serialized output.
 	ReuseSignaturesOnSerialize bool
+	// Message size limit: ErrMessageTooLarge is returned once the read data
+	// reaches it. This counts both uncompressed packets, and the maximum of
+	// compressed size and inflated size for each compressed packet. For nested
+	// compressed packets, the decompressed output is always counted.
+	MaxMessageSize *int64
 }
 
 func (c *Config) Random() io.Reader {
@@ -95,4 +100,11 @@ func (c *Config) PasswordHashIterations() int {
 
 func (c *Config) ReuseSignatures() bool {
 	return c != nil && c.ReuseSignaturesOnSerialize
+}
+
+func (c *Config) MaxSizeLimit() *int64 {
+	if c == nil {
+		return nil
+	}
+	return c.MaxMessageSize
 }
