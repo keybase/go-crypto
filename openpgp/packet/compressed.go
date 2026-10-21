@@ -51,7 +51,7 @@ func (c *Compressed) parse(r io.Reader) error {
 	// Set up a counting reader so when read size limit is being set,
 	// limitCompressedReader knows how much compressed data was read compared
 	// to inflated data. See `PushCompressed`.
-	c.counting = &countingReader{Reader: r}
+	c.counting = &countingReader{reader: r}
 	r = c.counting
 
 	switch buf[0] {

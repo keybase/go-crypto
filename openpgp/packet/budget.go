@@ -31,13 +31,13 @@ func (l *limitReader) Read(p []byte) (n int, err error) {
 }
 
 type countingReader struct {
-	Reader io.Reader
-	Count  int64
+	reader io.Reader
+	count  int64
 }
 
 func (c *countingReader) Read(p []byte) (n int, err error) {
-	n, err = c.Reader.Read(p)
-	c.Count += int64(n)
+	n, err = c.reader.Read(p)
+	c.count += int64(n)
 	return n, err
 }
 
@@ -65,8 +65,8 @@ func (l *limitCompressedReader) Read(p []byte) (n int, err error) {
 	// If inflated amount exceeds the compressed amount (common case), charge
 	// the difference into the budget (on top of what's already charged when
 	// reading the compressed amount.)
-	if l.countInflated > l.counting.Count+l.charged {
-		charge := l.countInflated - l.counting.Count - l.charged
+	if l.countInflated > l.counting.count+l.charged {
+		charge := l.countInflated - l.counting.count - l.charged
 		*l.budget -= charge
 		l.charged += charge
 	}

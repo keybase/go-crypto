@@ -6,6 +6,7 @@ package packet
 
 import (
 	"io"
+	"slices"
 
 	"github.com/keybase/go-crypto/openpgp/errors"
 )
@@ -73,28 +74,22 @@ func (r *Reader) PushCompressed(compressed *Compressed) (err error) {
 	}
 	// If there's already a limitCompressedReader on the stack, just add a
 	// limitReader and charge the full decompressed bytes to the budget.
-	//
-	// TODO: Change to slices.ContainsFunc if all consumers are on golang 1.21
-	// or higher.
-	isInnerCompressed := false
-	for _, v := range r.readers {
-		if _, ok := v.(*limitCompressedReader); ok {
-			isInnerCompressed = true
-			break
-		}
-	}
+	isInnerCompressed := slices.ContainsFunc(r.readers, func(v io.Reader) bool {
+		_, ok := v.(*limitCompressedReader)
+		return ok
+	})
 	if isInnerCompressed {
 		r.readers = append(r.readers, &limitReader{
 			reader: compressed.Body,
 			budget: r.budget,
 		})
-		return nil
+	} else {
+		r.readers = append(r.readers, &limitCompressedReader{
+			body:     compressed.Body,
+			counting: compressed.counting,
+			budget:   r.budget,
+		})
 	}
-	r.readers = append(r.readers, &limitCompressedReader{
-		body:     compressed.Body,
-		counting: compressed.counting,
-		budget:   r.budget,
-	})
 	return nil
 }
 
