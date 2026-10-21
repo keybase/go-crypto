@@ -1,0 +1,18 @@
+openpgp/packet/reader.go
+  h_f21e4bfbe3ac62 9,77-80,86
+openpgp/packet/compressed.go
+  h_f21e4bfbe3ac62 54
+openpgp/packet/budget.go
+  h_f21e4bfbe3ac62 34-35,39-40,68-69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "af6db3a694ddf1c4381b78a59a20547609699e11",
+  "prompts": {},
+  "humans": {
+    "h_f21e4bfbe3ac62": {
+      "author": "Michał Zochniak <michal.zochniak@zoom.us>"
+    }
+  }
+}
