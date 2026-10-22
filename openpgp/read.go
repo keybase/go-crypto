@@ -94,7 +94,7 @@ func ReadMessage(r io.Reader, keyring KeyRing, prompt PromptFunction, config *pa
 	var pubKeys []keyEnvelopePair
 	var se *packet.SymmetricallyEncrypted
 
-	packets := packet.NewReader(r)
+	packets := packet.NewReaderWithBudget(r, config.MaxSizeLimit())
 	md = new(MessageDetails)
 	md.IsEncrypted = true
 
@@ -250,7 +250,7 @@ FindLiteralData:
 		}
 		switch p := p.(type) {
 		case *packet.Compressed:
-			if err := packets.Push(p.Body); err != nil {
+			if err := packets.PushCompressed(p); err != nil {
 				return nil, err
 			}
 		case *packet.OnePassSignature:
